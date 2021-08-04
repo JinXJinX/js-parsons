@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.16.0.css">
+    </head>
+    <body>
+        <div id="main"></div>
+
+        <h1 id="qunit-header">js-parsons tests</h1>
+        <div id="qunit"></div>
+
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.js"></script>
+        <script src="../lib/underscore-min.js"></script>
+        <script src="../lib/lis.js"></script>
+        <script type="text/javascript" src="../parsons.js"></script>
+        <script src="https://code.jquery.com/qunit/qunit-2.16.0.js"></script>
+        <script>
+            QUnit.module('Independent utilities', function() {
+                QUnit.test("getRandomPermutation", function(assert) {
+                    var initial = 'foo\n  bar';
+                    var parson = new ParsonsWidget({
+                        sortableId: 'main'
+                    });
+                    parson.init(initial);
+                    var perm = parson.getRandomPermutation(2)
+                    assert.equal(perm.length,2);
+                });
+            })
+
+            QUnit.module('Initialization', function() {
+                QUnit.test("Initialization of internal data structures", function(assert) {
+                    var initial = 'foo\n  bar';
+                    var parson = new ParsonsWidget({
+                        sortableId: 'main'
+                    });
+                    parson.init(initial);
+                    assert.expect(3);
+                    assert.equal(parson.extra_lines.length, 0);
+                    assert.equal(parson.model_solution.length, 2);
+                    assert.equal(parson.modified_lines.length, 2);
+                });
+            })
+
+            QUnit.module('Feedback without extra lines', function() {
+                QUnit.test("Indentation error on second line", function(assert) {
+                    var initial = 'foo\n  bar';
+                    var parson = new ParsonsWidget({
+                        sortableId: 'main'
+                    });
+                    parson.init(initial);
+                    parson.shuffleLines();
+
+                    assert.expect(2);
+                    assert.ok(0 == parson.extra_lines.length, "No extra lines were given");
+                    assert.ok(parson.getFeedback().length > 0);
+                });
+
+                QUnit.test("No errors", function(assert) {
+                    var initial = 'def traverse_in_order(binary_node):\n' +
+                                  'if binary_node:';
+                    var parson = new ParsonsWidget({
+                        sortableId: 'main',
+                        permutation: function(n) {return [0, 1];}
+                    });
+                    parson.init(initial);
+                    parson.shuffleLines();
+
+                    assert.expect(2);
+                    assert.ok(0 == parson.extra_lines.length, "No extra lines were given");
+                    assert.ok(parson.getFeedback().length == 0, "No indentation so all should be fine");
+                });
+            })
+
+            QUnit.module('Feedback without extra lines', function() {
+                var noPermutation = function(n) {return [0, 1];};
+                var swapPermutation = function(n) {return [1, 0];};
+
+                QUnit.test("First two lines swapped in the beginning", function(assert) {
+                    var initial = 'foo\nbar';
+                    var config = {
+                        'sortableId': 'main',
+                        permutation: swapPermutation
+                    }
+                    var parson = new ParsonsWidget(config);
+                    parson.init(initial);
+                    parson.shuffleLines();
+
+                    var modified = parson.getModifiedCode('#ul-' + config['sortableId']);
+                    assert.expect(2);
+                    assert.equal(modified[0].code, 'bar');
+                    assert.equal(modified[1].code, 'foo');
+                });
+
+                QUnit.test("First two lines are not swapped", function(assert) {
+                    var initial = 'foo\n  bar';
+                    let config = {
+                        sortableId: 'main',
+                        permutation: noPermutation
+                    }
+                    var parson = new ParsonsWidget(config);
+                    parson.init(initial);
+                    parson.shuffleLines();
+                    var modified = parson.getModifiedCode('#ul-' + config['sortableId']);
+
+                    assert.expect(2);
+                    assert.equal(modified[0].code, 'foo');
+                    assert.equal(modified[1].code, 'bar');
+                });
+
+                QUnit.test("first test within module", function(assert) {
+                    assert.ok( true, "all pass" );
+                });
+            })
+        </script>
+    </body>
+</html>

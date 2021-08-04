@@ -618,20 +618,20 @@
 
     // Find the line objects for the student's code
     for (i = 0; i < student_code.length; i++) {
-      studentCodeLineObjects.push($.extend(true, 
+      studentCodeLineObjects.push($.extend(true,
     	                                   {},
     	                                   parson.getLineById(student_code[i].id)));
     }
 
     // This maps codeline strings to the index, at which starting from 0, we have last
-    // found this codeline. This is used to find the best indices for each 
+    // found this codeline. This is used to find the best indices for each
     // codeline in the student's code for the LIS computation and, for example,
     // assigns appropriate indices for duplicate lines.
     var lastFoundCodeIndex = {};
     $.each(studentCodeLineObjects, function(index, lineObject) {
     	// find the first matching line in the model solution
     	// starting from where we have searched previously
-    	for (var i = (typeof(lastFoundCodeIndex[lineObject.code]) !== 'undefined') ? lastFoundCodeIndex[lineObject.code]+1 : 0; 
+    	for (var i = (typeof(lastFoundCodeIndex[lineObject.code]) !== 'undefined') ? lastFoundCodeIndex[lineObject.code]+1 : 0;
     	     i < parson.model_solution.length;
     	     i++) {
     	  if (parson.model_solution[i].code === lineObject.code) {
@@ -661,19 +661,19 @@
 	    	// choose only one of the equivalent positions to the LIS and
 	        // extra duplicates are left in the inverse and highlighted as
 	    	// errors.
-	        // TODO This method will not always give the most intuitive 
-	    	// highlights for lines to supposed to be moved when there are 
+	        // TODO This method will not always give the most intuitive
+	    	// highlights for lines to supposed to be moved when there are
 	        // several extra duplicates in the student's code.
             lineObject.lisIgnore = false;
             lineObject.position = lastFoundCodeIndex[lineObject.code];
 	      }
-	      
+
     	}
       });
-    
-    var lisStudentCodeLineObjects = 
+
+    var lisStudentCodeLineObjects =
       studentCodeLineObjects.filter(function (lineObject) { return !lineObject.lisIgnore; });
-    var inv = 
+    var inv =
       LIS.best_lise_inverse_indices(lisStudentCodeLineObjects
     			 				    .map(function (lineObject) { return lineObject.position; }));
     $.each(inv, function(_index, lineObjectIndex) {
@@ -867,14 +867,14 @@
      this.extra_lines = [];
      // contains line objects (see parseCode for line object description)
      this.model_solution = [];
-     
+
      //To collect statistics, feedback should not be based on this
      this.user_actions = [];
-     
+
      //State history for feedback purposes
      this.state_path = [];
      this.states = {};
-     
+
      var defaults = {
        'incorrectSound': false,
        'x_indent': 50,
@@ -885,7 +885,7 @@
        'lang': 'en',
        'toggleSeparator': '::'
      };
-     
+
      this.options = jQuery.extend({}, defaults, options);
      this.feedback_exists = false;
      this.id_prefix = options['sortableId'] + 'codeline';
@@ -922,13 +922,13 @@
     }
    };
   ParsonsWidget._graders = graders;
-      
+
    ////Public methods
 
-   // Parses an assignment definition given as a string and returns and 
+   // Parses an assignment definition given as a string and returns and
    // transforms this into an object defining the assignment with line objects.
    //
-   // lines: A string that defines the solution to the assignment and also 
+   // lines: A string that defines the solution to the assignment and also
    //   any possible distractors
    // max_distractrors: The number of distractors allowed to be included with
    //   the lines required in the solution
@@ -942,12 +942,12 @@
      // Create line objects out of each codeline and separate
      // lines belonging to the solution and distractor lines
      // Fields in line objects:
-     //   code: a string of the code, may include newline characters and 
+     //   code: a string of the code, may include newline characters and
      //     thus in fact represents a block of consecutive lines
      //   indent: indentation level, -1 for distractors
      //   distractor: boolean whether this is a distractor
      //   orig: the original index of the line in the assignment definition string,
-     //     for distractors this is not meaningful but for lines belonging to the 
+     //     for distractors this is not meaningful but for lines belonging to the
      //     solution, this is their expected position
      $.each(lines, function(index, item) {
        lineObject = new ParsonsCodeline(item, that);
@@ -970,9 +970,7 @@
           }
         }
      });
-     
      var normalized = this.normalizeIndents(indented);
-     
      $.each(normalized, function(index, item) {
               if (item.indent < 0) {
                 // Indentation error
@@ -980,8 +978,8 @@
               }
               widgetData.push(item);
             });
-     
-     // Remove extra distractors if there are more alternative distrators 
+
+     // Remove extra distractors if there are more alternative distrators
      // than should be shown at a time
      var permutation = this.getRandomPermutation(distractors.length);
      var selected_distractors = [];
@@ -989,15 +987,14 @@
        selected_distractors.push(distractors[permutation[i]]);
        widgetData.push(distractors[permutation[i]]);
      }
-     
      return {
        // an array of line objects specifying  the solution
        solution:  $.extend(true, [], normalized),
-       // an array of line objects specifying the requested number 
+       // an array of line objects specifying the requested number
        // of distractors (not all possible alternatives)
        distractors: $.extend(true, [], selected_distractors),
-       // an array of line objects specifying the initial code arrangement 
-       // given to the user to use in constructing the solution 
+       // an array of line objects specifying the initial code arrangement
+       // given to the user to use in constructing the solution
        widgetInitial: $.extend(true, [], widgetData),
        errors: errors};
    };
@@ -1009,7 +1006,6 @@
      this.extra_lines = initial_structures.distractors;
      this.modified_lines = initial_structures.widgetInitial;
      var id_prefix = this.id_prefix;
-     
      // Add ids to the line objects in the user-draggable lines
      $.each(this.modified_lines, function(index, item) {
        item.id = id_prefix + index;
@@ -1032,7 +1028,7 @@
        return hash.join("-");
      }
    };
-   
+
    ParsonsWidget.prototype.solutionHash = function() {
        return this.getHash("#ul-" + this.options.sortableId);
    };
@@ -1158,9 +1154,9 @@
    };
 
    // Check and normalize code indentation.
-   // Does not use the current object (this) ro make changes to 
+   // Does not use the current object (this) ro make changes to
    // the parameter.
-   // Returns a new array of line objects whose indent fields' values 
+   // Returns a new array of line objects whose indent fields' values
    // may be different from the argument. If indentation does not match,
    // i.e. code is malformed, value of indent may be -1.
    // For example, the first line may not be indented.
@@ -1226,7 +1222,7 @@
      } else {
        h = hash.split("-");
      }
-     
+
      var ids = [];
      for (var i = 0; i < h.length; i++) {
        lineValues = h[i].split("_");
@@ -1244,7 +1240,7 @@
      } else {
        h = hash.split("-");
      }
-     
+
      var ids = [];
      for (var i = 0; i < h.length; i++) {
          lineValues = h[i].split("_");
