@@ -18,28 +18,38 @@ var assertCodesEqual = function(assert, code1, code2, message) {
 
 QUnit.module('Utilities', function() {
   QUnit.test("getRandomPermutation()", function(assert) {
-    var initial = [
-      [0, 'foo'],
-      [1, 'bar']
-    ];
+    // var initial = [
+    //   [0, 'foo'],
+    //   [1, 'bar']
+    // ];
+    var initial = 'foo\n  bar';
     var parson = new ParsonsWidget({
-      'codeLines': initial,
+      // 'codeLines': initial,
       'sortableId': 'main'
     });
+    parson.init(initial)
     var perm = parson.getRandomPermutation(2);
     assert.equal(perm.length,2);
     assert.ok( (perm[0] == 0 && perm[1] == 1) || (perm[0] == 1 && perm[1] == 0) );
   });
 
   QUnit.test("normalizeIndents()", function(assert) {
-    var codeLine = function(elem, index) { return {'indent': elem}; };
-    var initial = [
-      [0, 'foo'],
-      [1, 'bar']
-    ];
+    var codeLine = function(elem, index) {
+      let cl = new ParsonsCodeline();
+      cl.indent = elem;
+      return cl;
+      // return {'indent': elem};
+    };
+    var initial = 'foo\n  bar';
+    // var initial = [
+    //   [0, 'foo'],
+    //   [1, 'bar']
+    // ];
     var parson = new ParsonsWidget({
-      'codeLines': initial, 'sortableId': 'main'
+      // 'codeLines': initial,
+      'sortableId': 'main'
     });
+    parson.init(initial);
     var perm = parson.getRandomPermutation(2);
     assert.deepEqual(
       parson.normalizeIndents(jQuery.map([0, 1, 2, 1], codeLine)),
@@ -81,7 +91,9 @@ QUnit.module('Initialization of the widget', function() {
       '  if not binary_node: #distractor\n' +
       '    foo\n' +
       '  foo-1\n';
-    var parson = new ParsonsWidget({'sortableId': 'main'});
+    var parson = new ParsonsWidget({
+      'sortableId': 'main',
+    });
     parson.init(initial);
     // parson.shuffleLines();
 

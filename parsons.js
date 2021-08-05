@@ -618,9 +618,10 @@
 
     // Find the line objects for the student's code
     for (i = 0; i < student_code.length; i++) {
-      studentCodeLineObjects.push($.extend(true,
-    	                                   {},
-    	                                   parson.getLineById(student_code[i].id)));
+      // studentCodeLineObjects.push($.extend(true,
+    	//                                    {},
+    	//                                    parson.getLineById(student_code[i].id)));
+      studentCodeLineObjects.push(student_code[i].clone());
     }
 
     // This maps codeline strings to the index, at which starting from 0, we have last
@@ -789,6 +790,26 @@
       });
    };
 
+  // $.extend(true, _, _) + ParsonsCodeline object clone
+  var deep_extend = function(target, original) {
+    if (Array.isArray(original)) {
+      original.forEach(function (item, idx) {
+        let newItem;
+        if (Array.isArray(item)) {
+          newItem = deep_extend([], item);
+        } else {
+          newItem = deep_extend({}, item);
+        }
+        target.push(newItem);
+      });
+    } else if (original instanceof ParsonsCodeline) {
+      target = original.clone();
+    } else {
+      target = $.extend(true, target, original);
+    }
+    return target;
+  }
+
   // Create a line object skeleton with only code and indentation from
   // a code string of an assignment definition string (see parseCode)
   var ParsonsCodeline = function(codestring, widget) {
@@ -796,6 +817,8 @@
     this.code = "";
     this.indent = 0;
     this._toggles = [];
+    this.distractor = false;
+    this.codestring = codestring;
     if (codestring) {
       // Consecutive lines to be dragged as a single block of code have strings "\\n" to
       // represent newlines => replace them with actual new line characters "\n"
@@ -852,6 +875,12 @@
   ParsonsCodeline.prototype.toggleValue = function(index) {
     if (index < 0 || index >= this._toggles.length) { return undefined; }
     return this._toggles[index].textContent;
+  };
+  ParsonsCodeline.prototype.clone = function() {
+    let new_cl = new ParsonsCodeline(this.codestring, this.widget);
+    new_cl.indent = this.indent;
+    new_cl.distractor = this.distractor;
+    return new_cl;
   };
   // expose the type for testing, extending etc
   window.ParsonsCodeline = ParsonsCodeline;
@@ -972,31 +1001,36 @@
      });
      var normalized = this.normalizeIndents(indented);
      $.each(normalized, function(index, item) {
-              if (item.indent < 0) {
-                // Indentation error
-                errors.push(this.translations.no_matching(normalized.orig));
-              }
-              widgetData.push(item);
-            });
-
+        if (item.indent < 0) {
+          // Indentation error
+          errors.push(this.translations.no_matching(normalized.orig));
+        }
+        widgetData.push(item);
+    });
      // Remove extra distractors if there are more alternative distrators
      // than should be shown at a time
      var permutation = this.getRandomPermutation(distractors.length);
      var selected_distractors = [];
      for (var i = 0; i < max_distractors; i++) {
-       selected_distractors.push(distractors[permutation[i]]);
-       widgetData.push(distractors[permutation[i]]);
+       let item = distractors[permutation[i]];
+       if (!item) continue;
+       selected_distractors.push(item);
+       widgetData.push(item);
      }
      return {
        // an array of line objects specifying  the solution
-       solution:  $.extend(true, [], normalized),
+      //  solution:  $.extend(true, [], normalized),
+       solution: deep_extend([], normalized),
        // an array of line objects specifying the requested number
        // of distractors (not all possible alternatives)
-       distractors: $.extend(true, [], selected_distractors),
+      //  distractors: $.extend(true, [], selected_distractors),
+       distractors: deep_extend([], selected_distractors),
        // an array of line objects specifying the initial code arrangement
        // given to the user to use in constructing the solution
-       widgetInitial: $.extend(true, [], widgetData),
-       errors: errors};
+      //  widgetInitial: $.extend(true, [], widgetData),
+       widgetInitial: deep_extend([], widgetData),
+       errors: errors
+      };
    };
 
    ParsonsWidget.prototype.init = function(text) {
@@ -1131,7 +1165,6 @@
     * leftDiff horizontal difference from (before and after drag) in px
     ***/
    ParsonsWidget.prototype.updateIndent = function(leftDiff, id) {
-
      var code_line = this.getLineById(id);
      var new_indent = this.options.can_indent ? code_line.indent + Math.floor(leftDiff / this.options.x_indent) : 0;
      new_indent = Math.max(0, new_indent);
@@ -1154,14 +1187,13 @@
    };
 
    // Check and normalize code indentation.
-   // Does not use the current object (this) ro make changes to
+   // Does not use the current object (this) to make changes to
    // the parameter.
    // Returns a new array of line objects whose indent fields' values
    // may be different from the argument. If indentation does not match,
    // i.e. code is malformed, value of indent may be -1.
    // For example, the first line may not be indented.
    ParsonsWidget.prototype.normalizeIndents = function(lines) {
-
      var normalized = [];
      var new_line;
      var match_indent = function(index) {
@@ -1175,7 +1207,8 @@
      };
      for ( var i = 0; i < lines.length; i++ ) {
        //create shallow copy from the line object
-       new_line = jQuery.extend({}, lines[i]);
+       // TODO ?
+      new_line = lines[i].clone();
        if (i === 0) {
          new_line.indent = 0;
          if (lines[i].indent !== 0) {
@@ -1206,7 +1239,10 @@
           i, item;
      for (i = 0; i < solution_ids.length; i++) {
        item = this.getLineById(solution_ids[i]);
-       lines_to_return.push($.extend(new ParsonsCodeline(), item));
+      //  lines_to_return.push($.extend(new ParsonsCodeline(), item));
+        if (item) {
+          lines_to_return.push(item.clone());
+        }
      }
      return lines_to_return;
    };

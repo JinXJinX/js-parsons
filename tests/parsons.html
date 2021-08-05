@@ -46,7 +46,8 @@
                 QUnit.test("Indentation error on second line", function(assert) {
                     var initial = 'foo\n  bar';
                     var parson = new ParsonsWidget({
-                        sortableId: 'main'
+                        sortableId: 'main',
+                        permutation: function(n) {return [0, 1];}
                     });
                     parson.init(initial);
                     parson.shuffleLines();
