@@ -818,7 +818,6 @@
     this.indent = 0;
     this._toggles = [];
     this.distractor = false;
-    this.codestring = codestring;
     if (codestring) {
       // Consecutive lines to be dragged as a single block of code have strings "\\n" to
       // represent newlines => replace them with actual new line characters "\n"
@@ -877,9 +876,8 @@
     return this._toggles[index].textContent;
   };
   ParsonsCodeline.prototype.clone = function() {
-    let new_cl = new ParsonsCodeline(this.codestring, this.widget);
-    new_cl.indent = this.indent;
-    new_cl.distractor = this.distractor;
+    let new_cl = new ParsonsCodeline();
+    Object.assign(new_cl, this);
     return new_cl;
   };
   // expose the type for testing, extending etc
