@@ -1289,9 +1289,9 @@
     * TODO(petri) refoctor to UI
     */
    ParsonsWidget.prototype.displayError = function(message) {
-     if (this.options.incorrectSound && $.sound) {
-       $.sound.play(this.options.incorrectSound);
-     }
+    //  if (this.options.incorrectSound && $.sound) {
+    //    $.sound.play(this.options.incorrectSound);
+    //  }
      alert(message);
    };
 
