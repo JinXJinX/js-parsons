@@ -57,23 +57,26 @@
 
 
     $(document).ready(function(){
-      var parson = new ParsonsWidget({
-                  'sortableId': 'sortable',
-                  'trashId': 'sortableTrash',
-                  'unittests': unittests
+      var pjs = new ParsonsJS({
+        'sortableId': 'sortable',
+        'trashId': 'sortableTrash',
+        'unittests': unittests,
+        codeStr: initial
       });
-      parson.init(initial);
-      parson.shuffleLines();
+      pjs.initUI();
+//       parson.init(initial);
+//       parson.shuffleLines();
       $("#newInstanceLink").click(function(event){
         event.preventDefault();
-        parson.shuffleLines();
+        pjs.shuffleLines();
       });
       $("#feedbackLink").click(function(event){
         event.preventDefault();
-        var fb = parson.getFeedback();
-        $("#jsparson").html("<h2>Feedback from testing your program:</h2>" +
-                            fb.feedback);
-        if (fb.success) { alert("Good, you solved the assignment!"); }
+        var fb = pjs.getFeedback();
+        console.log(fb);
+        // $("#jsparson").html("<h2>Feedback from testing your program:</h2>" +
+        //                     fb.feedback);
+        // if (fb.success) { alert("Good, you solved the assignment!"); }
       });
    });
     </script>

@@ -32,7 +32,8 @@
         var parson;
 
         $(document).ready(function(){
-            parson = new ParsonsWidget({
+            // parson = new ParsonsWidget({
+            parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 'max_wrong_lines': 1,
                 'vartests': [{initcode: "output = ''", code: "", message: "Testing...", variables: {output: "I am a Java program I am a Java program I am a Java program "}},
@@ -42,10 +43,14 @@
                       "output += 'I '\n" +
                       "output += 'am '\n" +
                       "output += 'a Java program '\npass\n",
-                'programmingLang': "java"
+                'programmingLang': "java",
+                permutation: function(n) {return [0,1,2,3,4];},
+                codeStr: initial
             });
-            parson.init(initial);
-            parson.shuffleLines();
+            // parson.init(initial);
+            // parson.shuffleLines();
+            parson.initUI();
+
             $("#newInstanceLink").click(function(event){
                 event.preventDefault();
                 parson.shuffleLines();
@@ -53,7 +58,8 @@
             $("#feedbackLink").click(function(event){
                 event.preventDefault();
                 var fb = parson.getFeedback();
-                $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
+                // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
+                console.log(fb);
             });
         });
         </script>

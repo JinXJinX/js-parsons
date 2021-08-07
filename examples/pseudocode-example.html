@@ -34,7 +34,8 @@
         var parson;
 
         $(document).ready(function(){
-            parson = new ParsonsWidget({
+            // parson = new ParsonsWidget({
+            parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 'trashId': 'sortableTrash',
                 'max_wrong_lines': 1,
@@ -46,10 +47,12 @@
                       "min = a\n" +
                       "else:\n" +
                       "min = b\n  pass",
-                'programmingLang': "pseudo"
+                'programmingLang': "pseudo",
+                codeStr: initial
             });
-            parson.init(initial);
-            parson.shuffleLines();
+            // parson.init(initial);
+            // parson.shuffleLines();
+            parson.initUI();
             $("#newInstanceLink").click(function(event){
                 event.preventDefault();
                 parson.shuffleLines();

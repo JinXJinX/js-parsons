@@ -35,15 +35,18 @@
                 "$$toggle::x::y::tmp$$ = " +
                 "$$toggle::x::y::tmp$$\n";
   $(document).ready(function(){
-    var parson = new ParsonsWidget({
+    // var parson = new ParsonsWidget({
+    var parson = new ParsonsJS({
       'sortableId': 'sortable',
       'trashId': 'sortableTrash',
       'vartests': [{initcode: "x = 0\ny=2", code: "", message: "Testing with initial variable values x = 0 and y = 2", variables: {x: 2}},
                    {initcode: "x = 3\ny=4\n", code: "", message: "Testing with initial variable values x = 3 and y = 4", variables: {x: 4, y: 3}}],
-      lang: "en"
+      lang: "en",
+      codeStr: initial
     });
-    parson.init(initial);
-    parson.shuffleLines();
+    // parson.init(initial);
+    // parson.shuffleLines();
+    parson.initUI();
     $("#newInstanceLink").click(function(event){
       event.preventDefault();
       parson.shuffleLines();
@@ -51,8 +54,9 @@
     $("#feedbackLink").click(function(event){
       event.preventDefault();
       var fb = parson.getFeedback();
-      $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
-      if (fb.success) { alert("Good, you solved the assignment!"); }
+      console.log(fb);
+      // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
+      // if (fb.success) { alert("Good, you solved the assignment!"); }
     });
   });
 </script>

@@ -1,7 +1,7 @@
 (function() {
   var ANIMATION_DURATION = 200,
-      touch = ( 'ontouchstart' in document.documentElement ) ? true : false,
-      clickEvent = touch?"touchstart":"click",
+      touch = ('ontouchstart' in document.documentElement) ? true : false,
+      clickEvent = touch ? "touchstart" : "click",
       FEEDBACK_WINDOWS = [5000, 20000, 45000],
       FEEDBACK_PENALTIES = [15000, 15000, 15000],
       COLLECT_ANONYMOUS_DATA = false,
@@ -38,8 +38,6 @@
       parson.AssignmentTab = AssignmentTab;
     }
   };
-
-
 
   // object to handle the revisit feedback tab
   var RevisitFeedback = {

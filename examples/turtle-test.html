@@ -56,40 +56,43 @@
         <script src="../lib/skulpt.js"></script>
         <script src="../lib/skulpt-stdlib.js"></script>
         <script>
-        $(document).ready(function(){
+        $(document).ready(function() {
           var initial = 'REPEAT 3 TIMES\nforward(100)\nleft(120)\nENDREPEAT';
-          var parson;
           Sk.canvas = "studentCanvas";
-            parson = new ParsonsWidget({
-                'sortableId': 'sortable',
-                'trashId': 'sortableTrash',
-                'max_wrong_lines': 1,
-                turtleModelCode: "modelTurtle.forward(100)\n" +
-                      "modelTurtle.left(120)\nmodelTurtle.forward(100)\nmodelTurtle.left(120)\nmodelTurtle.forward(100)\n" +
-                        "modelTurtle.left(120)",
-                'grader': ParsonsWidget._graders.TurtleGrader,
-                'executable_code': "for i in range(0,3):\n" +
-                      "myTurtle.forward(100)\n" +
-                      "myTurtle.left(120)\n" +
-                      "pass",
-                'programmingLang': "pseudo"
-            });
-            parson.init(initial);
-            parson.shuffleLines();
-            $("#newInstanceLink").click(function(event){
-                event.preventDefault();
-                parson.shuffleLines();
-            });
-            $("#feedbackLink").click(function(event){
-                event.preventDefault();
-                var fb = parson.getFeedback();
-//                $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
-                if (fb.success) {
-                  alert("Great job, you solved the exercise!");
-                } else {
-                  alert("Sorry, your solution does not match the model image");
-                }
-            });
+          let pjs = new ParsonsJS({
+            'sortableId': 'sortable',
+            // 'trashId': 'sortableTrash',
+            'max_wrong_lines': 1,
+            turtleModelCode: "modelTurtle.forward(100)\n" +
+                  "modelTurtle.left(120)\nmodelTurtle.forward(100)\nmodelTurtle.left(120)\nmodelTurtle.forward(100)\n" +
+                    "modelTurtle.left(120)",
+            'grader': ParsonsWidget._graders.TurtleGrader,
+            'executable_code': "for i in range(0,3):\n" +
+                  "myTurtle.forward(100)\n" +
+                  "myTurtle.left(120)\n" +
+                  "pass",
+            'programmingLang': "pseudo",
+            codeStr: initial
+          });
+
+          pjs.initUI();
+            // parson.init(initial);
+            // parson.shuffleLines();
+          $("#newInstanceLink").click(function(event){
+            event.preventDefault();
+            pjs.shuffleLines();
+          });
+          $("#feedbackLink").click(function(event){
+            event.preventDefault();
+            var fb = pjs.getFeedback();
+            console.log(fb);
+            // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
+            // if (fb.success) {
+            //   alert("Great job, you solved the exercise!");
+            // } else {
+            //   alert("Sorry, your solution does not match the model image");
+            // }
+          });
         });
         </script>
     </body>
