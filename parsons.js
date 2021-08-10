@@ -442,14 +442,15 @@
         var isClose = false, // was a new blocks opened on this line
             isOpen = false,  // was a block closed on this line
             item = student_code[i],
-            line = $("#" + item.id).text(), // code of the line
+            // line = $("#" + item.id).text(), // code of the line
+            line = item.getCode(), // code of the line
             topBlock, bO;
 
         // Check if a proper indentation or the line was found in normalizeIndents
         // -1 will mean no matching indent was found
         if (item.indent < 0) {
           blockErrors.push(this.parson.translations.no_matching(i + 1));
-          $("#" + item.id).addClass("incorrectIndent");
+          // $("#" + item.id).addClass("incorrectIndent");
           break; // break on error
         }
 
@@ -462,30 +463,34 @@
             topBlock = blocks.pop();
             if (!topBlock) {
               blockErrors.push(this.parson.translations.no_matching_open(i + 1, close[blockClose]));
-              // $("#" + item.id).addClass("incorrectPosition");
             } else if (close[blockClose] !== topBlock.name) { // incorrect closing block
               blockErrors.push(this.parson.translations.block_close_mismatch(i + 1, close[blockClose], topBlock.line, topBlock.name));
-              // $("#" + item.id).addClass("incorrectPosition");
             } else if (student_code[i].indent !== topBlock.indent) { // incorrect indent
               blockErrors.push(this.parson.translations.no_matching(i + 1));
-              // $("#" + item.id).addClass("incorrectIndent");
             }
-            prevIndent = topBlock?topBlock.indent:0;
+            prevIndent = topBlock ? topBlock.indent : 0;
             minIndent = 0;
             break; // only one block can be closed on a single line
           }
         }
+
         // Go through all block opening regexps and test if they match
         for (var blockOpen in open) {
           if (new RegExp(blockOpen).test(line)) {
             isOpen = true;
-            bO = {name: open[blockOpen], indent: student_code[i].indent, line: i + 1, item: item};
+            bO = {
+              name: open[blockOpen],
+              indent: student_code[i].indent,
+              line: i + 1,
+              item: item
+            };
             blocks.push(bO);
             prevIndent = 0;
             minIndent = bO.indent;
             break; // only one block can be opened on a single line
           }
         }
+
         // if not opening or closing a block, check block indentation
         if (!isClose && !isOpen && blocks.length > 0) {
           // indentation should match previous indent if inside block
@@ -493,7 +498,6 @@
           if ((prevIndent && student_code[i].indent !== prevIndent) ||
               student_code[i].indent <= minIndent) {
             blockErrors.push(this.parson.translations.no_matching(i + 1));
-            $("#" + item.id).addClass("incorrectIndent");
           }
           prevIndent = student_code[i].indent;
         }
@@ -503,10 +507,10 @@
           break;
         }
       }
+
       // create errors for all blocks opened but not closed
       for (i = 0; i < blocks.length; i++) {
         blockErrors.push(this.parson.translations.no_matching_close(blocks[i].line, blocks[i].name));
-        // $("#" + blocks[i].item.id).addClass("incorrectPosition");
       }
     }
     // if there were errors in the blocks, give feedback and don't execute the code
@@ -544,9 +548,13 @@
     let codeLines = [];
 
     for (let item of student_code) {
-      var ind = parseInt(item.id.replace(parson.id_prefix, ''), 10);
+      // var ind = parseInt(item.id.replace(parson.id_prefix, ''), 10);
+      var ind = item.idx;
       var execCodeLine = executableCode[ind].clone();
       execCodeLine.indent = item.indent;
+      execCodeLine.toggleIdxs = item.toggleIdxs;
+      execCodeLine.toggleVals = item.toggleVals
+
       codeLines.push(execCodeLine);
     };
     return codeLines;
@@ -598,7 +606,7 @@
 	    	// it must be a distractor
 	    	// => add to feedback, log, and ignore in LIS computation
 	        wrong_order = true;
-	        lineObject.markIncorrectPosition();
+	        // lineObject.markIncorrectPosition();
 	    	  incorrectLines.push(lineObject.origIdx);
 	        lineObject.lisIgnore = true;
 	      } else {
@@ -910,6 +918,14 @@
       widgetData.push(item);
     });
 
+    // Add ids to all codeline objects
+    let id_prefix = this.id_prefix;
+    let codelines = [...widgetData, ...distractors];
+    for (let idx = 0; idx < codelines.length; idx++) {
+      codelines[idx].id = id_prefix + idx;
+      codelines[idx].idx = idx;
+    };
+
     // Remove extra distractors if there are more alternative distrators
     // than should be shown at a time
     //  var permutation = this.getRandomPermutation(distractors.length);
@@ -918,13 +934,10 @@
        widgetData.push(item);
     }
 
-    // $.each(widgetData, function(index, item) {
-    // Add ids to the line objects in the user-draggable lines
-    let id_prefix = this.id_prefix;
-    for (let idx = 0; idx < widgetData.length; idx++) {
-      widgetData[idx].id = id_prefix + idx;
-     //  item.indent = 0;
-    };
+    let widgetInitial = deep_extend([], widgetData);
+    for (let item of widgetInitial) {
+      item.indent = 0;
+    }
 
     return {
       // an array of line objects specifying  the solution
@@ -936,7 +949,7 @@
 
       // an array of line objects specifying the initial code arrangement
       // given to the user to use in constructing the solution
-      widgetInitial: deep_extend([], widgetData),
+      widgetInitial: widgetInitial,
       errors: errors
     };
   };
@@ -953,13 +966,13 @@
     var state, previousState;
     var logData = {
       time: new Date(),
-      output: this.solutionHash(),
+      // output: this.solutionHash(),
       type: "action"
     };
 
-    if (this.options.trashId) {
-      logData.input = this.trashHash();
-    }
+    // if (this.options.trashId) {
+    //   logData.input = this.trashHash();
+    // }
 
     if (entry.target) {
       entry.target = entry.target.replace(this.id_prefix, "");
@@ -969,13 +982,13 @@
     $.extend(logData, entry);
     this.user_actions.push(logData);
 
-    //Updating the state history
+    // Updating the state history
     if(this.state_path.length > 0) {
       previousState = this.state_path[this.state_path.length - 1];
       this.states[previousState] = logData;
     }
 
-    //Add new item to the state path only if new and previous states are not equal
+    // Add new item to the state path only if new and previous states are not equal
     if (this.state_path[this.state_path.length - 1] !== state) {
       this.state_path.push(state);
     }
@@ -983,19 +996,6 @@
     if ($.isFunction(this.options.action_cb)) {
       this.options.action_cb.call(this, logData);
     }
-  };
-
-  /**
-  * Update indentation of a line based on new coordinates
-  * leftDiff horizontal difference from (before and after drag) in px
-  ***/
-  ParsonsWidget.prototype.updateIndent = function(leftDiff, id) {
-    var code_line = this.getLineById(id);
-    var new_indent = this.options.can_indent ? code_line.indent + Math.floor(leftDiff / this.options.x_indent) : 0;
-    new_indent = Math.max(0, new_indent);
-    code_line.indent = new_indent;
-
-    return new_indent;
   };
 
   // Get a line object by the full id including id prefix
@@ -1055,132 +1055,13 @@
     return normalized;
   };
 
-  ParsonsWidget.prototype.hashToIDList = function(hash) {
-    var lines = [];
-    var lineValues;
-    var lineObject;
-    var h;
-
-    if (hash === "-" || hash === "" || hash === null) {
-      h = [];
-    } else {
-      h = hash.split("-");
-    }
-
-    var ids = [];
-    for (var i = 0; i < h.length; i++) {
-      lineValues = h[i].split("_");
-      ids.push(this.modified_lines[lineValues[0]].id);
-    }
-    return ids;
-  };
-
-  ParsonsWidget.prototype.updateIndentsFromHash = function(hash) {
-    var lineValues;
-    var h;
-
-    if (hash === "-" || hash === "" || hash === null) {
-      h = [];
-    } else {
-      h = hash.split("-");
-    }
-
-    var ids = [];
-    for (var i = 0; i < h.length; i++) {
-        lineValues = h[i].split("_");
-        this.modified_lines[lineValues[0]].indent = Number(lineValues[1]);
-        this.updateHTMLIndent(this.modified_lines[lineValues[0]].id);
-    }
-    return ids;
-  };
-
-  /**
-  * TODO(petri) refoctor to UI
-  */
-  ParsonsWidget.prototype.displayError = function(message) {
-    alert(message);
-  };
-
-  ParsonsWidget.prototype.colorFeedback = function(elemId) {
-    return new LineBasedGrader(this).grade(elemId);
-  };
-
-   /**
-    * @return
-    * TODO(petri): Separate UI from here
-    */
-
-  ParsonsCodeline.prototype.elem = function() {
-    // the element will change on shuffle, so we should re-fetch it every time
-    return $("#" + this.id);
-  };
-  ParsonsCodeline.prototype.markCorrect = function() {
-    this.elem().addClass(this.widget.FEEDBACK_STYLES.correctPosition);
-  };
-  ParsonsCodeline.prototype.markIncorrectPosition = function() {
-    this.elem().addClass(this.widget.FEEDBACK_STYLES.incorrectPosition);
-  };
-  ParsonsCodeline.prototype.markIncorrectIndent = function() {
-    this.elem().addClass(this.widget.FEEDBACK_STYLES.incorrectIndent);
-  };
-
-  // Returns the index of the currently selected toggle option for the
-  // toggle element at given index
-  ParsonsCodeline.prototype.selectedToggleIndex = function(index) {
-    if (index < 0 || index >= this._toggles.length) { return -1; }
-    var elem = this._toggles[index];
-    var opts = $(elem).data("jsp-options");
-    return opts.indexOf(elem.textContent);
-  };
-
-  /**
-   * @param {Array<string>} codeLineIds
-   */
-  ParsonsWidget.prototype.getModifiedCode = function(codeLineIds) {
-    //ids of the the modified code
-    let lines_to_return = [];
-          // solution_ids = $(search_string).sortable('toArray'),
-          // i, item;
-    for (let i = 0; i < codeLineIds.length; i++) {
-      let item = this.getLineById(codeLineIds[i]);
-      //  lines_to_return.push($.extend(new ParsonsCodeline(), item));
-        if (item) {
-          lines_to_return.push(item.clone());
-        }
-    }
-    return lines_to_return;
-  };
-
-  ParsonsWidget.prototype.getHash = function(searchString) {
-    var hash = [],
-        ids = $(searchString).sortable('toArray'),
-        line;
-    for (var i = 0; i < ids.length; i++) {
-      line = this.getLineById(ids[i]);
-      hash.push(line.origIdx + "_" + line.indent);
-    }
-    //prefix with something to handle empty output situations
-    if (hash.length === 0) {
-      return "-";
-    } else {
-      return hash.join("-");
-    }
-  };
-
-  ParsonsWidget.prototype.solutionHash = function() {
-    return this.getHash("#ul-" + this.options.sortableId);
-  };
-
-  ParsonsWidget.prototype.trashHash = function() {
-    return this.getHash("#ul-" + this.options.trashId);
-  };
-
   ParsonsWidget.prototype.getFeedback = function(data) {
     let codeLines = [];
     // update indent
     // for (var clId in data){
     for (var clData of data){
-      let cl = this.getLineById(clData.id);
+      let id = this.id_prefix + clData.idx;
+      let cl = this.getLineById(id);
       if (!cl) continue;
       cl = cl.clone();
       cl.indent = clData.indent;
@@ -1213,6 +1094,7 @@
 
     this.parson = new ParsonsWidget(config);
     this.codeStr = config.codeStr;
+    this.order = config.order;
     // when get feedback is triggered. get the item ids in order, send item ids
     // to ParsonsWidget
   }
@@ -1223,14 +1105,17 @@
 
   ParsonsJS.prototype.initUI = function() {
     this.init();
-    // this.parson.init(this.codeStr);
-    this.shuffleLines();
+    if (this.order) {
+      this.initListItemFromOrder(this.order);
+    } else {
+      this.shuffleLines();
+    }
   }
 
   ParsonsJS.prototype.codeLineToHTML = function(codeline) {
     // TODO add toggle ele here
     let code = this.codeLineAddToggles(codeline);
-    return '<li id="' + codeline.id + '" class="prettyprint lang-py">' + code + '<\/li>';
+    return '<li id="' + codeline.id + '" class="prettyprint lang-py" data-id="' + codeline.idx + '">' + code + '<\/li>';
   };
 
   ParsonsJS.prototype.codeLinesToHTML = function(codelineIDs, destinationID) {
@@ -1251,10 +1136,24 @@
   };
 
   ParsonsJS.prototype.updateHTMLIndent = function($item, indNew) {
-    // var line = this.getLineById(codelineID);
     $item.css("margin-left", this.parson.options.x_indent * indNew + "px");
     $item.prop('data-indent', indNew);
   };
+
+  ParsonsJS.prototype.setToggleVal = function($codeline, toggleIdxs) {
+    $codeline.find('.jsparson-toggle').each(function(idx) {
+      let $toggle = $(this),
+          tIdx = toggleIdxs[idx],
+          choices = $toggle.data("jsp-options");
+
+      if (tIdx < 0 || !choices || tIdx > choices.length) {
+        return
+      }
+      let newVal = choices[tIdx];
+      $toggle.text(newVal);
+      $toggle.prop('data-idx', tIdx);
+    })
+  }
 
   ParsonsJS.prototype.initSortableBox = function($box) {
     let that = this;
@@ -1262,6 +1161,7 @@
       $(this).prop('data-indent', 0);
     })
 
+    // init toggles
     let $toggles = $box.find('.jsparson-toggle');
     $toggles.prop('data-idx', -1);
     $toggles.click(function () {
@@ -1271,9 +1171,6 @@
           newIdx = (choices.indexOf(curVal) + 1) % choices.length,
           newVal = choices[newIdx],
           $parent = $toggle.parent("li");
-
-      // clear existing feedback
-      //  widget.clearFeedback();
 
       // change the shown toggle element
       $toggle.text(newVal);
@@ -1297,14 +1194,14 @@
     let $targetBox = $("#" + options.sortableId);
 
     if (options.trashId) {
-      html = (options.trash_label?'<p>'+options.trash_label+'</p>':'') +
-        this.codeLinesToHTML(trashIDs, options.trashId);
+      html = (options.trash_label ? '<p>' + options.trash_label + '</p>' : '')
+        + this.codeLinesToHTML(trashIDs, options.trashId);
       let $trashBox = $("#" + options.trashId);
       $trashBox.html(html);
       this.initSortableBox($trashBox);
 
-      html = (options.solution_label?'<p>'+options.solution_label+'</p>':'') +
-        this.codeLinesToHTML(solutionIDs, options.sortableId);
+      html = (options.solution_label ? '<p>' + options.solution_label + '</p>' : '')
+        + this.codeLinesToHTML(solutionIDs, options.sortableId);
       // $("#" + options.sortableId).html(html);
       // let $targetBox = $("#" + options.sortableId);
       $targetBox.html(html);
@@ -1313,10 +1210,6 @@
       $targetBox.html(html);
     }
     this.initSortableBox($targetBox);
-
-    // if (window.prettyPrint && (typeof(this.options.prettyPrint) === "undefined" || this.options.prettyPrint)) {
-    //   prettyPrint();
-    // }
 
     var that = this;
     var $sortable = $("#ul-" + options.sortableId).sortable({
@@ -1349,7 +1242,7 @@
         grid : parson.options.can_indent ? [parson.options.x_indent, 1 ] : false
     });
 
-    $sortable.addClass("output");
+    // $sortable.addClass("output");
     if (options.trashId) {
       var $trash = $("#ul-" + options.trashId).sortable({
         start: function() {
@@ -1388,7 +1281,7 @@
 
   ParsonsJS.prototype.codeLineAddToggles = function(codeLine) {
     let toggleRegexp = this.parson.toggleRegexp;
-    let toggleSeparator = this.parson.toggleSeparator;
+    let toggleSeparator = this.parson.options.toggleSeparator;
     let toggles = codeLine.code.match(toggleRegexp);
     let html = codeLine.code;
 
@@ -1396,7 +1289,7 @@
       for (let toggle of toggles) {
         let opts = toggle.substring(10, toggle.length - 2).split(toggleSeparator);
         html = html.replace(
-          toggles[i],
+          toggle,
           "<span class='jsparson-toggle' data-jsp-options='"
           + JSON.stringify(opts).replace("<", "&lt;")
           + "'></span>"
@@ -1410,17 +1303,41 @@
     return _.shuffle(_.range(n));
   };
 
-  ParsonsJS.prototype.shuffleLines = function() {
+  ParsonsJS.prototype.shuffleLines = function(idlist=null) {
     let parson = this.parson;
-    var permutation = (parson.options.permutation ? parson.options.permutation : this.getRandomPermutation)(parson.modified_lines.length);
-    var idlist = [];
-    for(var i in permutation) {
-        idlist.push(parson.modified_lines[permutation[i]].id);
+    // var permutation = (parson.options.permutation ? parson.options.permutation : this.getRandomPermutation)(parson.modified_lines.length);
+    if (!idlist) {
+      let permutation = this.getRandomPermutation(parson.modified_lines.length);
+      idlist = [];
+      for(var idx of permutation) {
+          idlist.push(parson.modified_lines[idx].id);
+      }
     }
+
     if (parson.options.trashId) {
         this.createHTMLFromLists([], idlist);
     } else {
         this.createHTMLFromLists(idlist, []);
+    }
+  }
+
+  ParsonsJS.prototype.initListItemFromOrder = function(order) {
+    let id_prefix = this.parson.id_prefix;
+    for (let item of order) {
+      item.id = id_prefix + item.idx;
+    }
+    let idlist = order.map(item => item.id);
+    this.shuffleLines(idlist);
+
+    for (let clData of order) {
+      let $item = $('#' + clData.id);
+      if (clData.indent) {
+        this.updateHTMLIndent($item, clData.indent);
+      }
+
+      if (clData.toggleIdxs) {
+        this.setToggleVal($item, clData.toggleIdxs);
+      }
     }
   }
 
@@ -1441,12 +1358,11 @@
       })
 
       data.push({
-        id: clId,
+        idx: $cl.data('id'),
         indent: $cl.prop('data-indent'),
         toggleIdxs: toggleIdxs
       })
     }
-
     let fb = this.parson.getFeedback(data);
     return fb;
   };

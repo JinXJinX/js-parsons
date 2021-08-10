@@ -37,7 +37,7 @@
             // parson = new ParsonsWidget({
             parson = new ParsonsJS({
                 'sortableId': 'sortable',
-                'trashId': 'sortableTrash',
+                // 'trashId': 'sortableTrash',
                 'max_wrong_lines': 1,
                 'vartests': [{initcode: "min = None\na = 0\nb = 2", code: "", message: "Testing with a = 0 ja b = 2", variables: {min: 0}},
                     {initcode: "min = None\na = 7\nb = 4\n", code: "", message: "Testing with a = 7 ja b = 4",
@@ -48,6 +48,13 @@
                       "else:\n" +
                       "min = b\n  pass",
                 'programmingLang': "pseudo",
+                order: [
+                    {idx: 0, indent: 0, toggleIdxs: [0, 0]},
+                    {idx: 1, indent: 1},
+                    {idx: 2, indent: 0},
+                    {idx: 3, indent: 1},
+                    {idx: 4, indent: 0},
+                ],
                 codeStr: initial
             });
             // parson.init(initial);
@@ -60,7 +67,8 @@
             $("#feedbackLink").click(function(event){
                 event.preventDefault();
                 var fb = parson.getFeedback();
-                $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
+                console.log(fb)
+                // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
             });
         });
         </script>

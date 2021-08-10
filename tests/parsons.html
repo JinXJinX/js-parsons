@@ -47,7 +47,7 @@
                 QUnit.test("Indentation error on second line", function(assert) {
                     var pjs = new ParsonsJS({
                         sortableId: 'main',
-                        permutation: function(n) {return [0, 1];},
+                        order: [{idx: 0}, {idx: 1}],
                         codeStr: 'foo\n  bar'
                     });
                     pjs.initUI();
@@ -61,7 +61,7 @@
                                   'if binary_node:';
                     var pjs = new ParsonsJS({
                         sortableId: 'main',
-                        permutation: function(n) {return [0, 1];},
+                        order: [{idx: 0}, {idx: 1}],
                         codeStr: initial
                     });
                     pjs.initUI()
@@ -73,13 +73,10 @@
             })
 
             QUnit.module('Feedback without extra lines', function() {
-                var noPermutation = function(n) {return [0, 1];};
-                var swapPermutation = function(n) {return [1, 0];};
-
                 QUnit.test("First two lines swapped in the beginning", function(assert) {
                     var config = {
                         'sortableId': 'main',
-                        permutation: swapPermutation,
+                        order: [{idx: 1}, {idx: 0}],
                         codeStr: 'foo\nbar'
                     }
                     var pjs = new ParsonsJS(config);
@@ -97,7 +94,7 @@
                 QUnit.test("First two lines are not swapped", function(assert) {
                     let config = {
                         sortableId: 'main',
-                        permutation: noPermutation,
+                        order: [{idx: 0}, {idx: 1}],
                         codeStr: 'foo\n  bar'
                     }
                     var pjs = new ParsonsJS(config);

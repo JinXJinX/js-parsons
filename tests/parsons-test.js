@@ -162,11 +162,10 @@ QUnit.module('Feedback', function() {
     var pjs = new ParsonsJS({
       'sortableId': 'main',
       'max_wrong_lines': 1,
-      permutation: function(n) {return [0, 1];},
+      order: [{idx: 0}, {idx: 1}],
       codeStr: initial
     });
     pjs.initUI()
-
     assert.equal(pjs.getFeedback().length, 0);
   });
 
@@ -175,11 +174,10 @@ QUnit.module('Feedback', function() {
     var pjs = new ParsonsJS({
       'sortableId': 'main',
       'max_wrong_lines': 1,
-      permutation: function(n) {return [1, 0];},
+      order: [{idx: 1}, {idx: 0}],
       codeStr: initial
     });
     pjs.initUI()
-
     assert.ok(pjs.getFeedback().length > 0, 'there should be some feedback');
   });
 })
