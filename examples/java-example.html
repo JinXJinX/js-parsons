@@ -38,7 +38,7 @@
                 'max_wrong_lines': 1,
                 'vartests': [{initcode: "output = ''", code: "", message: "Testing...", variables: {output: "I am a Java program I am a Java program I am a Java program "}},
                     ],
-                'grader': ParsonsWidget._graders.LanguageTranslationGrader,
+                'grader': ParsonsWidget.GRADERS.LanguageTranslationGrader,
                 'executable_code': "for x in range(3):\n" +
                       "output += 'I '\n" +
                       "output += 'am '\n" +
