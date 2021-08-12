@@ -37,9 +37,9 @@
                     pjs.init();
 
                     assert.expect(3);
-                    assert.equal(pjs.parson.extra_lines.length, 0);
-                    assert.equal(pjs.parson.model_solution.length, 2);
-                    assert.equal(pjs.parson.modified_lines.length, 2);
+                    assert.equal(pjs.parson.extraLines.length, 0);
+                    assert.equal(pjs.parson.modelSolution.length, 2);
+                    assert.equal(pjs.parson.modifiedLines.length, 2);
                 });
             })
 
@@ -52,8 +52,8 @@
                     });
                     pjs.initUI();
                     assert.expect(2);
-                    assert.ok(0 == pjs.parson.extra_lines.length, "No extra lines were given");
-                    assert.ok(pjs.getFeedback().length > 0);
+                    assert.ok(0 == pjs.parson.extraLines.length, "No extra lines were given");
+                    assert.ok(pjs.getFeedback().errors.length > 0);
                 });
 
                 QUnit.test("No errors", function(assert) {
@@ -67,8 +67,8 @@
                     pjs.initUI()
 
                     assert.expect(2);
-                    assert.ok(0 == pjs.parson.extra_lines.length, "No extra lines were given");
-                    assert.ok(pjs.getFeedback().length == 0, "No indentation so all should be fine");
+                    assert.ok(0 == pjs.parson.extraLines.length, "No extra lines were given");
+                    assert.ok(pjs.getFeedback().errors.length == 0, "No indentation so all should be fine");
                 });
             })
 

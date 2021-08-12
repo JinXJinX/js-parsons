@@ -88,7 +88,7 @@ QUnit.module('Initialization of the widget', function() {
     pjs.init();
 
     assertCodesEqual(
-      assert, pjs.parson.model_solution, [
+      assert, pjs.parson.modelSolution, [
         {'code': 'def traverse_in_order(binary_node):', 'indent':0},
         {'code': 'if binary_node:', 'indent':1},
         {'code': 'foo', 'indent':2},
@@ -97,14 +97,14 @@ QUnit.module('Initialization of the widget', function() {
     );
 
     assertCodesEqual(
-      assert, pjs.parson.extra_lines, [
+      assert, pjs.parson.extraLines, [
         {'code': 'if not binary_node:', 'indent': -1},
       ], 'distractors'
     );
 
     //distractors are moved to the end
     assertCodesEqual(
-      assert, pjs.parson.modified_lines, [
+      assert, pjs.parson.modifiedLines, [
         {'code': 'def traverse_in_order(binary_node):', 'indent':0},
         {'code': 'if binary_node:', 'indent':0},
         {'code': 'foo', 'indent':0},
@@ -166,7 +166,7 @@ QUnit.module('Feedback', function() {
       codeStr: initial
     });
     pjs.initUI()
-    assert.equal(pjs.getFeedback().length, 0);
+    assert.equal(pjs.getFeedback().errors.length, 0);
   });
 
   QUnit.test("Wrong order", function(assert) {
@@ -178,7 +178,7 @@ QUnit.module('Feedback', function() {
       codeStr: initial
     });
     pjs.initUI()
-    assert.ok(pjs.getFeedback().length > 0, 'there should be some feedback');
+    assert.ok(pjs.getFeedback().errors.length > 0, 'there should be some feedback');
   });
 })
 

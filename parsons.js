@@ -1,14 +1,12 @@
 'use strict';
 (function($, _) { // wrap in anonymous function to not show some helper variables
 
-  // regexp used for trimming
-  var trimRegexp = /^\s*(.*?)\s*$/;
-  var translations = {
+  let translations = {
     en: {
       trash_label: 'Drag from here',
       solution_label: 'Construct your solution here',
       order: function() {
-        return "Code fragments in your program are wrong, or in wrong order. This can be fixed by moving, removing, or replacing highlighted fragments.";},
+        return 'Code fragments in your program are wrong, or in wrong order. This can be fixed by moving, removing, or replacing highlighted fragments.';},
       lines_missing: function() {
         return "Your program has too few code fragments.";},
       lines_too_many: function() {
@@ -42,13 +40,72 @@
     }
   };
 
-  let python_indents = [],
-  spaces = "";
-  for (let counter = 0; counter < 20; counter++) {
-    python_indents[counter] = spaces;
-    spaces += "  ";
+  const LOG_MSG = {
+    ORDER: {
+      id: 1,
+      msg: 'Code fragments in your program are wrong, or in wrong order. This can be fixed by moving, removing, or replacing the code fragments.'
+    },
+    LINE_MISSING: {
+      id: 2,
+      msg: 'Your program has too few code fragments.'
+    },
+    LINE_TOO_MANY: {
+      id: 3,
+      msg: 'our program has too many code fragments.'
+    },
+    NO_MATCHING: {
+      id: 4,
+      msg: 'Based on language syntax, the code fragment is not correctly indented.'
+    },
+    NO_MATCHING_OPEN: {
+      id: 5,
+      msg: 'The block never started.'
+    },
+    NO_MATCHING_CLOSE: {
+      id: 6,
+      msg: 'Block not ended properly'
+    },
+    BLOCK_CLOSE_MISMATCH: {
+      id: 7,
+      msg: 'Block mismatched.'
+    },
+    BLOCK_STRUCTURE: {
+      id: 8,
+      msg: 'The code fragment belongs to a wrong block (i.e. indentation).'
+    },
+    UNITTEST_ERR: {
+      id: 9,
+      msg: 'Error in parsing/executing your program'
+    },
+    UNITTEST_ASSERTION_SUC: {
+      id: 10,
+      msg: 'Unittest assertion passed'
+    },
+    UNITTEST_ASSERTION_ERR: {
+      id: 11,
+      msg: 'Unittest assertion failed'
+    },
+    UNITTEST_OUTPUT_ASSERTION: {
+      id: 12,
+      msg: 'Actual output is not equal to the expected output'
+    },
+    VARIABLETEST_ASSERTION_SUC: {
+      id: 14,
+      msg: 'Variable test assertion passed'
+    },
+    VARIABLETEST_ASSERTION_ERR: {
+      id: 15,
+      msg: 'Variable test assertion failed'
+    },
   }
-  const PYTHON_INDENTS = python_indents;
+
+  let _pyIndents = [],
+  spaces = '';
+  for (let counter = 0; counter < 20; counter++) {
+    _pyIndents[counter] = spaces;
+    spaces += '  ';
+  }
+  const PYTHON_INDENTS = _pyIndents;
 
   let defaultToggleTypeHandlers = {
     boolean: ["True", "False"],
@@ -56,7 +113,7 @@
     mathop: ["+", "-", "*", "/"],
     boolop: ["and", "or"],
     range: function($item) {
-        var min = parseFloat($item.data("min") || "0"),
+        let min = parseFloat($item.data("min") || "0"),
             max = parseFloat($item.data("max") || "10"),
             step = parseFloat($item.data("step") || "1"),
             opts = [],
@@ -69,15 +126,48 @@
     }
   };
 
+  // specify the blocks for the pseudo language as a simple example case
+  const langBlocks = {
+    pseudo: {
+      open: {
+        "^\s*IF.*THEN\s*$": "IF", "^\s*ELSE\s*$":"IF", // IF
+        "^\s*WHILE.*DO\s*$": "WHILE", // WHILE
+        "^\s*REPEAT.*TIMES\s*$": "REPEAT..TIMES",
+        "^\s*REPEAT\s*$": "REPEAT",   // REPEAT ... UNTIL
+        "^\s*FOR.*DO\s*$": "FOR",
+        "^\s*FOR.*TO.*\s*$": "FOR",
+        "^\s*MODULE.*\\)\s*$": "MODULE", "^\s*MODULE.*RETURNS.*$": "MODULE",
+        "^\s*DO\s*$": "DO..WHILE"
+      },
+      close: {
+        "^\s*ELSE\s*$": "IF", "^\s*ENDIF\s*$": "IF", // ENDIF
+        "^\s*ENDWHILE\s*$": "WHILE",
+        "^\s*ENDREPEAT\s*$": "REPEAT..TIMES",
+        "^\s*UNTIL.*\s*$": "REPEAT",
+        "^\s*ENDFOR\s*$": "FOR",
+        "^\s*ENDMODULE\s*$": "MODULE",
+        "^\s*WHILE(?!.*DO)": "DO..WHILE"
+      }
+    },
+    java: {
+      open: {
+        "^.*\{\s*$": "block"
+      },
+      close: {
+        "^.*\}\s*$": "block"
+      }
+    }
+  };
+
   // $.extend(true, _, _) + ParsonsCodeline object clone
-  let deep_extend = function(target, original) {
+  let deepExtend = function(target, original) {
     if (Array.isArray(original)) {
       original.forEach(function (item, _) {
         let newItem;
         if (Array.isArray(item)) {
-          newItem = deep_extend([], item);
+          newItem = deepExtend([], item);
         } else {
-          newItem = deep_extend({}, item);
+          newItem = deepExtend({}, item);
         }
         target.push(newItem);
       });
@@ -91,28 +181,28 @@
 
   //Return executable code in one string
   let codelinesAsString = function(codeLines) {
-    var executableCode = "";
-    $.each(codeLines, function(_, codeLine) {
+    let executableCode = "";
+    for (let codeLine of codeLines) {
       // split codeblocks on br elements
-      var lines = codeLine.code.split(/<br\s*\/?>/);
+      let lines = codeLine.code.split(/<br\s*\/?>/);
 
       // go through all the lines
-      for (var i = 0; i < lines.length; i++) {
+      for (let i = 0; i < lines.length; i++) {
         // add indents and get the text for the line (to remove the syntax highlight html elements)
         executableCode += PYTHON_INDENTS[codeLine.indent] + $("<span>" + lines[i] + "</span>").text() + "\n";
       }
-    });
+    };
     return executableCode;
   };
 
   // Fix or strip line numbers in the (error) message
   // Basically removes the number of lines in prependCode from the line number shown.
   let stripLinenumberIfNeeded = function(msg, prependCode, studentCode) {
-    var lineNbrRegexp = /.*on line ([0-9]+).*/;
+    let lineNbrRegexp = /.*on line ([0-9]+).*/;
     // function that fixes the line numbers in student feedback
-    var match = msg.match(lineNbrRegexp);
+    let match = msg.match(lineNbrRegexp);
     if (match) {
-      var lineNo = parseInt(match[1], 10),
+      let lineNo = parseInt(match[1], 10),
           lowerLimit = prependCode? prependCode.split('\n').length :0,
           upperLimit = lowerLimit + studentCode.split('\n').length - 1;
       // if error in prepended code or tests, remove the line number
@@ -132,12 +222,12 @@
   // Note, that the Skulpt execution can throw an exception, which will not be handled
   // by this function, so the caller should take care of that.
   let pythonExec = function(code, usePy3=false, execLimit=2500) {
-    var output = "";
+    let output = '';
     // function for reading python imports with skulpt
     function builtinRead(x) {
-      if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+      if (typeof Sk.builtinFiles === 'undefined' || typeof Sk.builtinFiles['files'][x] === 'undefined')
         throw "File not found: '" + x + "'";
-      return Sk.builtinFiles["files"][x];
+      return Sk.builtinFiles['files'][x];
     }
     // configure Skulpt
     Sk.execLimit = execLimit || 2500; // time limit for the code to run
@@ -146,33 +236,75 @@
         python3: usePy3 || false,
         read: builtinRead
     });
-    return {mainmod: Sk.importMainWithBody("<stdin>", false, code), output: output};
+    return {mainmod: Sk.importMainWithBody('<stdin>', false, code), output: output};
   };
 
   // Executes the given code using Skulpt and returns an object with variable
   // values of the variables given in the variables array.
   // Possible errors will be in the _error property of the returned object.
   // Output of the code will be in _output property of the result.
-  // Example: this._variablesAfterExecution("x=0\ny=2\nprint x", ["x", "y"])
-  //    will return object {"x": 0, "y": 2, "_output": "0"}
+  // Example: this._variablesAfterExecution('x=0\ny=2\nprint x', ['x', 'y'])
+  //    will return object {'x': 0, 'y': 2, '_output': '0'}
   let variablesAfterExecution = function(code, variables, options) { // TODO
-    var output = "",
+    let output = '',
       execResult, mainmod,
       result = {'variables': {}},
       varname;
     try {
       execResult = pythonExec(code, options.python3, options.exec_limit);
     } catch (e) {
-      return {"_output": output, "_error": "" + e};
+      return {'_output': output, '_error': '' + e};
     }
     mainmod = execResult.mainmod;
-    for (var i = 0; i < variables.length; i++) {
+    for (let i = 0; i < variables.length; i++) {
       varname = variables[i];
       result.variables[varname] = mainmod.tp$getattr(varname);
     }
     result._output = execResult.output;
     return result;
   };
+
+  // Formats a JavaScript variable to the corresponding Python value *and*
+  // formats a Skulpt variable to the corresponding Python value
+  let formatVariableValue = function(varValue) {
+    let varType = typeof varValue;
+    if (varType === 'undefined' || varValue === null) {
+      return 'None';
+    } else if (varType === 'string') { // show strings in quotes
+      return '"' + varValue + '"';
+    } else if (varType === 'boolean') { // Python booleans with capital first letter
+      return varValue ? 'True' : 'False';
+    } else if ($.isArray(varValue)) { // JavaScript arrays
+      return '[' + varValue.join(', ') + ']';
+    } else if (varType === 'object' && varValue.tp$name === 'number') { // Python numbers
+      return varValue.v;
+    } else if (varType === 'object' && varValue.tp$name === 'NoneType') { // None
+      return 'None';
+    } else if (varType === 'object' && varValue.tp$name === 'bool') { // Python strings
+      return varValue.v ? 'True' : 'False';
+    } else if (varType === 'object' && varValue.tp$name === 'str') { // Python strings
+      return '"' + varValue.v + '"';
+    } else if (varType === 'object' && varValue.tp$name === 'list') { // Python lists
+      return '[' + varValue.v.join(', ') + ']';
+    } else {
+      return varValue;
+    }
+  };
+
+  let getErrLog = function (errMsg, segmentIds=null, lineNums=null, expectedVal=null, actualVal=null) {
+    return {
+      id: errMsg.id,
+      msg: errMsg.msg,
+      segmentIds: segmentIds,
+      lineNums: lineNums,
+      expectedVal: expectedVal,
+      actualVal: actualVal,
+    }
+  }
+
+  let formatLogMsg = function (logMsg, data) {
+    return Object.assign({}, data, logMsg);
+  }
 
   // Grader that will execute the code and check variable values after that
   // Expected and supported options:
@@ -199,50 +331,156 @@
     }
   }
 
+  // The 'original' grader for giving line based feedback.
+  class LineBasedGrader extends GraderBase {
+    constructor(parson) {
+      super(parson);
+    }
+
+    grade(codeLines) {
+      let parson = this.parson;
+      let student_code = parson.normalizeIndents(codeLines);
+      let lines_to_check = Math.min(student_code.length, parson.modelSolution.length);
+      let errors = [], log_errors = [], incorrectLines = [], incorrectClIds = [];
+      let studentCodeLineObjects = [];
+      let wrong_order = false;
+
+      // Find the line objects for the student's code
+      for (let code of student_code) {
+        studentCodeLineObjects.push(code.clone());
+      }
+
+      // This maps codeline strings to the index, at which starting from 0, we have last
+      // found this codeline. This is used to find the best indices for each
+      // codeline in the student's code for the LIS computation and, for example,
+      // assigns appropriate indices for duplicate lines.
+      let lastFoundCodeIndex = {};
+      for (let lineObject of studentCodeLineObjects) {
+        // find the first matching line in the model solution
+        // starting from where we have searched previously
+        let code = lineObject.code;
+        let lastIdx = lastFoundCodeIndex[code];
+        let idx = (typeof lastIdx !== 'undefined') ? lastIdx + 1 : 0;
+        for (; idx < parson.modelSolution.length; idx++) {
+          if (parson.modelSolution[idx].code === code) {
+            // found a line in the model solution that matches the student's line
+            lastIdx = idx;
+            lineObject.lisIgnore = false;
+            // This will be used in LIS computation
+            lineObject.position = idx;
+            break;
+          }
+        }
+        if (idx === parson.modelSolution.length) {
+          if (typeof lastIdx === 'undefined') {
+            // Could not find the line in the model solution at all,
+            // it must be a distractor
+            // => add to feedback, log, and ignore in LIS computation
+            wrong_order = true;
+            lineObject.lisIgnore = true;
+
+            // incorrectLines.push(lineObject.origIdx);
+            incorrectClIds.push(lineObject.id);
+          } else {
+            // The line is part of the solution but there are now
+            // too many instances of the same line in the student's code
+            // => Let's just have their correct position to be the same
+            // as the last one actually found in the solution.
+            // LIS computation will handle such duplicates properly and
+            // choose only one of the equivalent positions to the LIS and
+            // extra duplicates are left in the inverse and highlighted as
+            // errors.
+            // TODO This method will not always give the most intuitive
+            // highlights for lines to supposed to be moved when there are
+            // several extra duplicates in the student's code.
+            lineObject.lisIgnore = false;
+            lineObject.position = lastIdx;
+          }
+        }
+      };
+
+      let lisStudentCodeLineObjects = studentCodeLineObjects.filter(lineObject => !lineObject.lisIgnore);
+      let inv = LIS.best_lise_inverse_indices(
+        lisStudentCodeLineObjects.map(lineObject => lineObject.position)
+      );
+      for (let lineObjectIndex of inv) {
+        // Highlight the lines that could be moved to fix code as defined by the LIS computation
+        // incorrectLines.push(lisStudentCodeLineObjects[lineObjectIndex].origIdx);
+        let cl = lisStudentCodeLineObjects[lineObjectIndex];
+        incorrectClIds.push(cl.id);
+      };
+
+      if (inv.length > 0 || incorrectLines.length > 0) {
+        wrong_order = true;
+      }
+
+      if (wrong_order) {
+        let expectedOrder = parson.modelSolution.map(cl => cl.id),
+            actualOrder = student_code.map(cl => cl.id);
+        errors.push(formatLogMsg(LOG_MSG.ORDER, {
+          segmentIds: incorrectClIds,
+          expectedVal: expectedOrder,
+          actualVal: actualOrder
+        }));
+      }
+
+      // Check the number of lines in student's code
+      let expectedSize = parson.modelSolution.length;
+      let actualSize = student_code.length;
+      if (expectedSize < actualSize) {
+        errors.push(formatLogMsg(LOG_MSG.LINE_TOO_MANY, {
+          expectedVal: expectedSize,
+          actualVal: actualSize
+        }));
+      } else if (expectedSize > actualSize){
+        errors.push(formatLogMsg(LOG_MSG.LINE_MISSING, {
+          expectedVal: expectedSize,
+          actualVal: actualSize
+        }));
+      }
+
+      // Finally, check indent if no other errors
+      if (errors.length === 0) {
+        for (let idx = 0; idx < lines_to_check; idx++) {
+          let cl = student_code[idx];
+          let expectedIndent = parson.modelSolution[idx].indent;
+          let actualIndent = cl.indent;
+          if (
+            actualIndent !== expectedIndent
+            && ((!parson.options.first_error_only) || errors.length === 0)
+          ) {
+            errors.push(formatLogMsg(LOG_MSG.BLOCK_STRUCTURE, {
+              segmentIds: [cl.id],
+              expectedVal: expectedIndent,
+              actualVal: actualIndent
+            }));
+          }
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        errors: errors
+      };
+    };
+  }
+
 
   class VariableCheckGrader extends GraderBase {
     constructor(parson) {
       super(parson);
     };
 
-    // Formats a JavaScript variable to the corresponding Python value *and*
-    // formats a Skulpt variable to the corresponding Python value
-    formatVariableValue(varValue) {
-      var varType = typeof varValue;
-      if (varType === "undefined" || varValue === null) {
-        return "None";
-      } else if (varType === "string") { // show strings in quotes
-        return '"' + varValue + '"';
-      } else if (varType === "boolean") { // Python booleans with capital first letter
-        return varValue ? "True" : "False";
-      } else if ($.isArray(varValue)) { // JavaScript arrays
-        return '[' + varValue.join(', ') + ']';
-      } else if (varType === "object" && varValue.tp$name === "number") { // Python numbers
-        return varValue.v;
-      } else if (varType === "object" && varValue.tp$name === "NoneType") { // None
-        return "None";
-      } else if (varType === "object" && varValue.tp$name === "bool") { // Python strings
-        return varValue.v ? "True" : "False";
-      } else if (varType === "object" && varValue.tp$name === "str") { // Python strings
-        return '"' + varValue.v + '"';
-      } else if (varType === "object" && varValue.tp$name === "list") { // Python lists
-        return '[' + varValue.v.join(', ') + ']';
-      } else {
-        return varValue;
-      }
-    };
-
     grade(codeLines) {
-      var parson = this.parson,
+      let parson = this.parson,
           options = parson.options,
-          that = this,
-          feedback = "",
-          log_errors = [],
-          all_passed = true;
-      $.each(options.vartests, function(index, testdata) {
-        var student_code = codelinesAsString(codeLines);
-        var executableCode = (testdata.initcode || "") + "\n" + student_code + "\n" + (testdata.code || "");
-        var variables, expectedVals;
+          passedTests = [],
+          failedTests = [];
+
+      for (let testdata of options.vartests) {
+        let student_code = codelinesAsString(codeLines);
+        let executableCode = (testdata.initcode || '') + '\n' + student_code + '\n' + (testdata.finalcode || '');
+        let variables, expectedVals;
 
         if ('variables' in testdata) {
           variables = _.keys(testdata.variables);
@@ -252,54 +490,47 @@
           expectedVals = {};
           expectedVals[testdata.variable] = testdata.expected;
         }
-        var res = variablesAfterExecution(executableCode, variables, options);
-        var testcaseFeedback = "",
-            success = true,
-            log_entry = {'code': testdata.raw_code, 'msg': testdata.message},
+
+        let res = variablesAfterExecution(executableCode, variables, options);
+        let logData = {
+              code: testdata.initcode,
+              detail: testdata.message
+            },
             expected_value,
             actual_value;
-        if ("_error" in res) {
-          testcaseFeedback += parson.translations.unittest_error(stripLinenumberIfNeeded(res._error,
-                                                                                        testdata.initcode,
-                                                                                        student_code));
-          success = false;
-          log_entry.type = "error";
-          log_entry.errormsg = res._error;
+
+        if ('_error' in res) {
+          failedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ERROR, logData));
         } else {
-          log_entry.type = "assertion";
-          log_entry.variables = {};
-          for (var j = 0; j < variables.length; j++) {
-            var variable = variables[j],
+          for (let j = 0; j < variables.length; j++) {
+            let variable = variables[j],
                 variableSuccess;
-            if (variable === "__output") { // checking output of the program
+            if (variable === '__output') { // checking output of the program
               expected_value = expectedVals[variable];
               actual_value = res._output;
               variableSuccess = (actual_value == expected_value); // should we do a strict test??
-              testcaseFeedback += "<div class='" + (variableSuccess?"pass":"fail") + "'>";
-              testcaseFeedback += parson.translations.unittest_output_assertion(expected_value, actual_value) +
-                                  "</div>";
             } else {
-              expected_value = that.formatVariableValue(expectedVals[variable]);
-              actual_value = that.formatVariableValue(res.variables[variable]);
+              expected_value = formatVariableValue(expectedVals[variable]);
+              actual_value = formatVariableValue(res.variables[variable]);
               variableSuccess = (actual_value == expected_value);  // should we do a strict test??
-              testcaseFeedback += "<div class='" + (variableSuccess?"pass":"fail") + "'>";
-              testcaseFeedback += parson.translations.variabletest_assertion(variable, expected_value, actual_value) +
-                                  "</div>";
             }
-            log_entry.variables[variable] = {expected: expected_value, actual: actual_value};
-            if (!variableSuccess) {
-              success = false;
+
+            logData.expectedVal = expected_value;
+            logData.actualVal = actual_value;
+
+            if(variableSuccess) {
+              passedTests.push(formatLogMsg(LOG_MSG.VARIABLETEST_ASSERTION_SUC, logData));
+            } else {
+              failedTests.push(formatLogMsg(LOG_MSG.VARIABLETEST_ASSERTION_ERR, logData));
             }
           }
         }
-        all_passed = all_passed && success;
-        log_entry.success = success;
-        log_errors.push(log_entry);
-        feedback += "<div class='testcase " + (success?"pass":"fail") +
-                    "'><span class='msg'>" + testdata.message + "</span><br>" +
-                    testcaseFeedback + "</div>";
-      });
-      return { html: feedback, tests: log_errors, success: all_passed };
+      };
+      return {
+        success: failedTests.length === 0,
+        failedTests: failedTests,
+        passedTests: passedTests
+      }
     };
 
   }
@@ -327,19 +558,19 @@
       super(parson);
       let options = parson.options;
 
-      // execute the model solution turtlet path to have the target "picture" visible in the
+      // execute the model solution turtlet path to have the target 'picture' visible in the
       // beginning
-      var modelCommands = this._executeTurtleModel();
+      let modelCommands = this._executeTurtleModel();
 
       // specify variable tests for the commands executed by the student turtlet and the model
-      var penDown = typeof options.turtlePenDown === "boolean" ? options.turtlePenDown : true;
-      var vartests = [{
-        initcode: "import parsonturtle\nmyTurtle = parsonturtle.ParsonTurtle()\n"
-                  + "myTurtle.speed(0.3)\nmyTurtle.pensize(3, False)\n"
-                  + (penDown ? "" : "myTurtle.up()\n"), // set the state of the pen
-        code: (options.turtleTestCode ? options.turtleTestCode : "")
-              + "\ncommands = myTurtle.commands()\npass",
-        message: "",
+      let penDown = typeof options.turtlePenDown === 'boolean' ? options.turtlePenDown : true;
+      let vartests = [{
+        initcode: 'import parsonturtle\nmyTurtle = parsonturtle.ParsonTurtle()\n'
+                  + 'myTurtle.speed(0.3)\nmyTurtle.pensize(3, False)\n'
+                  + (penDown ? '' : 'myTurtle.up()\n'), // set the state of the pen
+        finalcode: (options.turtleTestCode ? options.turtleTestCode : '')
+                   + '\ncommands = myTurtle.commands()\npass',
+        message: '',
         variables: {
           commands: modelCommands
         }
@@ -351,14 +582,14 @@
     // Execute the model turtlet code
     _executeTurtleModel() {
       let options = this.parson.options;
-      let code = "import parsonturtle\nmodelTurtle = parsonturtle.ParsonTurtle()\n"
-                 + "modelTurtle.color(160, 160, 160, False)\n"
+      let code = 'import parsonturtle\nmodelTurtle = parsonturtle.ParsonTurtle()\n'
+                 + 'modelTurtle.color(160, 160, 160, False)\n'
                  + options.turtleModelCode
-                 + "\ncommands = modelTurtle.commands()\n";
-      Sk.canvas = options.turtleModelCanvas || "modelCanvas";
-      var result = variablesAfterExecution(code, ["commands"], options);
+                 + '\ncommands = modelTurtle.commands()\n';
+      Sk.canvas = options.turtleModelCanvas || 'modelCanvas';
+      let result = variablesAfterExecution(code, ['commands'], options);
       if (!result.variables || !result.variables.commands || !result.variables.commands.v) {
-        return "None";
+        return 'None';
       }
       return result.variables.commands.v;
     };
@@ -366,7 +597,7 @@
     // grade the student solution
     grade(codeLines) {
       // set the correct canvas where the turtle should draw
-      Sk.canvas = this.parson.options.turtleStudentCanvas || "studentCanvas";
+      Sk.canvas = this.parson.options.turtleStudentCanvas || 'studentCanvas';
       // Pass the grading on to either the LangTranslationGrader or VariableChecker
       if (this.parson.executable_lines) {
         let execLines = this.parson.executable_lines;
@@ -393,88 +624,63 @@
     }
 
     grade(codeLines) {
-      let success = true,
-          parson = this.parson,
+      let parson = this.parson,
           options = parson.options,
           unittests = parson.options.unittests,
           studentCodeStr = codelinesAsString(codeLines),
-          feedbackHtml = "", // HTML to be returned as feedback
-          result, execResult, mainmod;
-
-      var executableCode = studentCodeStr + "\n" + unittests;
+          passedTests = [],
+          failedTests = [];
+      let result, execResult, mainmod;
+      let executableCode = studentCodeStr + '\n' + unittests;
 
       // if there is code to add before student code, add it
       if (parson.options.unittest_code_prepend) {
-        executableCode = parson.options.unittest_code_prepend + "\n" + executableCode;
+        executableCode = parson.options.unittest_code_prepend + '\n' + executableCode;
       }
 
       try {
         execResult = pythonExec(executableCode, options.python3, options.exec_limit);
         mainmod = execResult.mainmod;
-        // let output = execResult.output;
-        result = JSON.parse(mainmod.tp$getattr("_test_result").v);
+        result = JSON.parse(mainmod.tp$getattr('_test_result').v);
       } catch (e) {
-        result = [{status: "error", _error: e.toString() }];
+        result = [{status: 'error', _error: e.toString() }];
       }
 
       // go through the results and generate HTML feedback
-      for (var i = 0, l = result.length; i < l; i++) {
-        var res = result[i];
-        feedbackHtml += '<div class="testcase ' + res.status + '">';
+      for (let res of result) {
         if (res.status === "error") { // errors in execution
-          feedbackHtml += parson.translations.unittest_error(stripLinenumberIfNeeded(res._error,
-                                                                      parson.options.unittest_code_prepend,
-                                                                      studentCodeStr));
-          success = false;
-        } else { // passed or failed tests
-          feedbackHtml += '<span class="msg">' + stripLinenumberIfNeeded(res.feedback) + '</span><br />';
-          feedbackHtml += 'Expected <span class="expected">' + res.expected +
-                    '</span>' + res.test + '<span class="actual">' + res.actual +
-                    '</span>';
+          failedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ERR, {
+            detail: stripLinenumberIfNeeded(
+              res._error,
+              parson.options.unittest_code_prepend,
+              studentCodeStr
+            )
+          }))
+        } else {
+          // passed or failed tests
+          let logData = {
+            expectedVal: res.expected,
+            actualVal: res.actual,
+            code: res.test,
+            detail: stripLinenumberIfNeeded(res.feedback)
+          }
+
           if (res.status === "fail") {
-            success = false;
+            failedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ASSERTION_ERR, logData))
+          } else {
+            passedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ASSERTION_SUC, logData))
           }
         }
-        feedbackHtml += '</div>';
       }
 
-      return { html: feedbackHtml, tests: result, success: success };
-    };
+      return {
+        success: failedTests.length === 0,
+        failedTests: failedTests,
+        passedTests: passedTests
+      }
+    }
   }
 
-
-  // specify the blocks for the pseudo language as a simple example case
-  // Code "Translating" grader
-  var langBlocks = {};
-  langBlocks.pseudo = {
-    open: {
-      "^\s*IF.*THEN\s*$": "IF", "^\s*ELSE\s*$":"IF", // IF
-      "^\s*WHILE.*DO\s*$": "WHILE", // WHILE
-      "^\s*REPEAT.*TIMES\s*$": "REPEAT..TIMES",
-      "^\s*REPEAT\s*$": "REPEAT",   // REPEAT ... UNTIL
-      "^\s*FOR.*DO\s*$": "FOR",
-      "^\s*FOR.*TO.*\s*$": "FOR",
-      "^\s*MODULE.*\\)\s*$": "MODULE", "^\s*MODULE.*RETURNS.*$": "MODULE",
-      "^\s*DO\s*$": "DO..WHILE"
-    },
-    close: {
-      "^\s*ELSE\s*$": "IF", "^\s*ENDIF\s*$": "IF", // ENDIF
-      "^\s*ENDWHILE\s*$": "WHILE",
-      "^\s*ENDREPEAT\s*$": "REPEAT..TIMES",
-      "^\s*UNTIL.*\s*$": "REPEAT",
-      "^\s*ENDFOR\s*$": "FOR",
-      "^\s*ENDMODULE\s*$": "MODULE",
-      "^\s*WHILE(?!.*DO)": "DO..WHILE"
-    }
-  };
-  langBlocks.java = {
-    open: {
-      "^.*\{\s*$": "block"
-    },
-    close: {
-      "^.*\}\s*$": "block"
-    }
-  };
 
   class LanguageTranslationGrader extends GraderBase {
     static _languageBlocks = langBlocks;
@@ -483,18 +689,38 @@
       super(parson);
     }
 
+    // Replaces codelines in the student's solution with the codelines
+    // specified in the executable_code option of the parsons widget.
+    // The executable_code option can be an array of lines or a string (in
+    // which case it will be split on newline.
+    // For each line in the model solution, there should be a matching line
+    // in the executable_code.
+    _replaceCodelines(student_code) {
+      let executableCode = this.parson.executable_lines;
+      let codeLines = [];
+
+      for (let item of student_code) {
+        let execCodeLine = executableCode[item.idx].clone();
+        execCodeLine.indent = item.indent;
+        execCodeLine.toggleIdxs = item.toggleIdxs;
+        execCodeLine.toggleVals = item.toggleVals
+        codeLines.push(execCodeLine);
+      };
+      return codeLines;
+    };
+
     grade(codeLines) {
       let student_code = this.parson.normalizeIndents(codeLines);
       // Check opening and closing blocks.
       // The block_open and block_close are expected to be maps with regexps as properties and
       // names of blocks as the property values. For example, a pseudocode IF..THEN..ELSE..ENDIF
       // blocks can be defined like this:
-      //    open = {"^\s*IF.*THEN\s*$": "IF", "^\s*ELSE\s*$":"IF"};
-      //    close = {"^s*ELSE\s*$": "IF", "^\s*ENDIF\s*$": "IF"};
+      //    open = {"^\s*IF.*THEN\s*$": "IF", '^\s*ELSE\s*$':'IF'};
+      //    close = {'^s*ELSE\s*$': 'IF', '^\s*ENDIF\s*$': 'IF'};
       let open = this.parson.options.block_open,
           close = this.parson.options.block_close,
           blockErrors = [],
-          i;
+          errors = [];
       let progLang = this.parson.options.programmingLang;
       let langBlocks = LanguageTranslationGrader._languageBlocks;
       if (progLang && langBlocks[progLang]) {
@@ -506,36 +732,45 @@
         let blocks = [],
             prevIndent = 0, // keep track of previous indent inside blocks
             minIndent = 0; // minimum indent needed inside newly opened blocks
+
+        let noMatchingIds = [];
+        let noMatchingOpenIds = [];
+        let noMatchingCloseIds = [];
+        let blockCloseMismatchIds = [];
+
         // go through all student code lines
-        for (i = 0; i < student_code.length; i++) {
-          var isClose = false, // was a new blocks opened on this line
+        for (let idx = 0; idx < student_code.length; idx++) {
+          let isClose = false, // was a new blocks opened on this line
               isOpen = false,  // was a block closed on this line
-              item = student_code[i],
-              // line = $("#" + item.id).text(), // code of the line
+              item = student_code[idx],
               line = item.code, // code of the line
+              idx1Based = idx + 1,
               topBlock, bO;
 
           // Check if a proper indentation or the line was found in normalizeIndents
           // -1 will mean no matching indent was found
           if (item.indent < 0) {
-            blockErrors.push(this.parson.translations.no_matching(i + 1));
-            // $("#" + item.id).addClass("incorrectIndent");
+            // blockErrors.push(this.parson.translations.no_matching(idx1Based));
+            noMatchingIds.push(item.id)
             break; // break on error
           }
 
           // Go through all block closing regexps and test if they match
           // Some lines can both close and open a block (such as else), so the
           // closing blocks need to be handled first
-          for (var blockClose in close) {
+          for (let blockClose in close) {
             if (new RegExp(blockClose).test(line)) {
               isClose = true;
               topBlock = blocks.pop();
               if (!topBlock) {
-                blockErrors.push(this.parson.translations.no_matching_open(i + 1, close[blockClose]));
+                // blockErrors.push(this.parson.translations.no_matching_open(idx1Based, close[blockClose]));
+                noMatchingOpenIds.push(item.id);
               } else if (close[blockClose] !== topBlock.name) { // incorrect closing block
-                blockErrors.push(this.parson.translations.block_close_mismatch(i + 1, close[blockClose], topBlock.line, topBlock.name));
-              } else if (student_code[i].indent !== topBlock.indent) { // incorrect indent
-                blockErrors.push(this.parson.translations.no_matching(i + 1));
+                // blockErrors.push(this.parson.translations.block_close_mismatch(idx1Based, close[blockClose], topBlock.line, topBlock.name));
+                blockCloseMismatchIds.push(item.id);
+              } else if (item.indent !== topBlock.indent) { // incorrect indent
+                // blockErrors.push(this.parson.translations.no_matching(idx1Based));
+                noMatchingIds.push(item.id)
               }
               prevIndent = topBlock ? topBlock.indent : 0;
               minIndent = 0;
@@ -544,13 +779,13 @@
           }
 
           // Go through all block opening regexps and test if they match
-          for (var blockOpen in open) {
+          for (let blockOpen in open) {
             if (new RegExp(blockOpen).test(line)) {
               isOpen = true;
               bO = {
                 name: open[blockOpen],
-                indent: student_code[i].indent,
-                line: i + 1,
+                indent: item.indent,
+                line: idx1Based,
                 item: item
               };
               blocks.push(bO);
@@ -565,10 +800,10 @@
             // indentation should match previous indent if inside block
             // and be greater than the indent of the block opening the block (minIndent)
             if ((prevIndent && student_code[i].indent !== prevIndent) ||
-                student_code[i].indent <= minIndent) {
-              blockErrors.push(this.parson.translations.no_matching(i + 1));
+                item.indent <= minIndent) {
+              noMatchingIds.push(item.id);
             }
-            prevIndent = student_code[i].indent;
+            prevIndent = item.indent;
           }
           // if we have errors, clear the blocks and exit from the loop
           if (blockErrors.length > 0) {
@@ -578,25 +813,41 @@
         }
 
         // create errors for all blocks opened but not closed
-        for (i = 0; i < blocks.length; i++) {
-          blockErrors.push(this.parson.translations.no_matching_close(blocks[i].line, blocks[i].name));
+        for (let block of blocks) {
+          // blockErrors.push(this.parson.translations.no_matching_close(block.line, block.name));
+          noMatchingCloseIds.push(item.id);
+        }
+
+        if (noMatchingIds) {
+          errors.push(formatLogMsg(LOG_MSG.NO_MATCHING, {
+            segmentIds: noMatchingIds
+          }))
+        }
+        if (noMatchingOpenIds) {
+          errors.push(formatLogMsg(LOG_MSG.NO_MATCHING_OPEN, {
+            segmentIds: noMatchingOpenIds
+          }))
+        }
+        if (noMatchingCloseIds) {
+          errors.push(formatLogMsg(LOG_MSG.NO_MATCHING_CLOSE, {
+            segmentIds: noMatchingCloseIds
+          }))
+        }
+        if (blockCloseMismatchIds) {
+          errors.push(formatLogMsg(LOG_MSG.BLOCK_CLOSE_MISMATCH, {
+            segmentIds: blockCloseMismatchIds
+          }))
         }
       }
+
       // if there were errors in the blocks, give feedback and don't execute the code
-      if (blockErrors.length > 0) {
-        var feedback = "<div class='testcase fail'>",
-            fbmsg = "";
-        for (i = 0; i < blockErrors.length; i++) {
-          fbmsg += blockErrors[i] + "</br>";
-        }
-        feedback += this.parson.translations.unittest_error(fbmsg);
-        feedback += "</div>";
-        return { html: feedback, success: false };
+      if (errors) {
+        return { success: false, errors: errors}
       }
 
       // Replace codelines show with codelines to be executed
       // Get real executable codes with indent
-      var codeLines = this._replaceCodelines(student_code);
+      codeLines = this._replaceCodelines(student_code);
       // run unit tests or variable check grader
       if (this.parson.options.unittests) {
         return new UnitTestGrader(this.parson).grade(codeLines);
@@ -605,160 +856,25 @@
       }
     };
 
-    // Replaces codelines in the student's solution with the codelines
-    // specified in the executable_code option of the parsons widget.
-    // The executable_code option can be an array of lines or a string (in
-    // which case it will be split on newline.
-    // For each line in the model solution, there should be a matching line
-    // in the executable_code.
-    _replaceCodelines(student_code) {
-      let executableCode = this.parson.executable_lines;
-      let codeLines = [];
-
-      for (let item of student_code) {
-        // var ind = parseInt(item.id.replace(parson.id_prefix, ''), 10);
-        var ind = item.idx;
-        var execCodeLine = executableCode[ind].clone();
-        execCodeLine.indent = item.indent;
-        execCodeLine.toggleIdxs = item.toggleIdxs;
-        execCodeLine.toggleVals = item.toggleVals
-
-        codeLines.push(execCodeLine);
-      };
-      return codeLines;
-    };
   }
 
-
-  // The "original" grader for giving line based feedback.
-  class LineBasedGrader extends GraderBase {
-    constructor(parson) {
-      super(parson);
-    }
-
-    grade(codeLines) {
-      var parson = this.parson;
-      var student_code = parson.normalizeIndents(codeLines);
-      var lines_to_check = Math.min(student_code.length, parson.model_solution.length);
-      var errors = [], log_errors = [];
-      var incorrectLines = [], studentCodeLineObjects = [];
-      var i;
-      var wrong_order = false;
-
-      // Find the line objects for the student's code
-      for (i = 0; i < student_code.length; i++) {
-        studentCodeLineObjects.push(student_code[i].clone());
-      }
-
-      // This maps codeline strings to the index, at which starting from 0, we have last
-      // found this codeline. This is used to find the best indices for each
-      // codeline in the student's code for the LIS computation and, for example,
-      // assigns appropriate indices for duplicate lines.
-      var lastFoundCodeIndex = {};
-      $.each(studentCodeLineObjects, function(index, lineObject) {
-        // find the first matching line in the model solution
-        // starting from where we have searched previously
-        let code = lineObject.code;
-        let i = (typeof(lastFoundCodeIndex[code]) !== 'undefined') ? lastFoundCodeIndex[code]+1 : 0;
-        for (; i < parson.model_solution.length; i++) {
-          if (parson.model_solution[i].code === code) {
-            // found a line in the model solution that matches the student's line
-            lastFoundCodeIndex[code] = i;
-            lineObject.lisIgnore = false;
-            // This will be used in LIS computation
-            lineObject.position = i;
-            break;
-          }
-        }
-        if (i === parson.model_solution.length) {
-          if (typeof(lastFoundCodeIndex[code]) === 'undefined') {
-          // Could not find the line in the model solution at all,
-          // it must be a distractor
-          // => add to feedback, log, and ignore in LIS computation
-            wrong_order = true;
-            // lineObject.markIncorrectPosition();
-            incorrectLines.push(lineObject.origIdx);
-            lineObject.lisIgnore = true;
-          } else {
-            // The line is part of the solution but there are now
-          // too many instances of the same line in the student's code
-            // => Let's just have their correct position to be the same
-          // as the last one actually found in the solution.
-            // LIS computation will handle such duplicates properly and
-          // choose only one of the equivalent positions to the LIS and
-            // extra duplicates are left in the inverse and highlighted as
-          // errors.
-            // TODO This method will not always give the most intuitive
-          // highlights for lines to supposed to be moved when there are
-            // several extra duplicates in the student's code.
-              lineObject.lisIgnore = false;
-              lineObject.position = lastFoundCodeIndex[code];
-          }
-        }
-      });
-
-      var lisStudentCodeLineObjects = studentCodeLineObjects.filter(lineObject => !lineObject.lisIgnore);
-      var inv = LIS.best_lise_inverse_indices(
-        lisStudentCodeLineObjects.map(lineObject => lineObject.position)
-      );
-      $.each(inv, function(_index, lineObjectIndex) {
-        // Highlight the lines that could be moved to fix code as defined by the LIS computation
-        incorrectLines.push(lisStudentCodeLineObjects[lineObjectIndex].origIdx);
-      });
-      if (inv.length > 0 || incorrectLines.length > 0) {
-        wrong_order = true;
-        log_errors.push({type: "incorrectPosition", lines: incorrectLines});
-      }
-
-      if (wrong_order) {
-        errors.push(parson.translations.order());
-      }
-
-      // Check the number of lines in student's code
-      if (parson.model_solution.length < student_code.length) {
-        errors.push(parson.translations.lines_too_many());
-        log_errors.push({type: "tooManyLines", lines: student_code.length});
-      } else if (parson.model_solution.length > student_code.length){
-        errors.push(parson.translations.lines_missing());
-        log_errors.push({type: "tooFewLines", lines: student_code.length});
-      }
-
-      // Finally, check indent if no other errors
-      if (errors.length === 0) {
-        for (i = 0; i < lines_to_check; i++) {
-          var code_line = student_code[i];
-          var model_line = parson.model_solution[i];
-          if (
-            code_line.indent !== model_line.indent
-            && ((!parson.options.first_error_only) || errors.length === 0)
-          ) {
-            // code_line.markIncorrectIndent();
-            errors.push(parson.translations.block_structure(i+1));
-            log_errors.push({type: "incorrectIndent", line: (i+1)});
-          }
-        }
-      }
-
-      return {errors: errors, log_errors: log_errors, success: (errors.length === 0)};
-    };
-  }
 
   const GRADERS = {
-    VariableCheckGrader: VariableCheckGrader,
-    TurtleGrader: TurtleGrader,
-    UnitTestGrader: UnitTestGrader,
-    LanguageTranslationGrader: LanguageTranslationGrader,
     LineBasedGrader: LineBasedGrader,
+    VariableCheckGrader: VariableCheckGrader,
+    UnitTestGrader: UnitTestGrader,
+    TurtleGrader: TurtleGrader,
+    LanguageTranslationGrader: LanguageTranslationGrader,
   }
 
   // Create a line object skeleton with only code and indentation from
   // a code string of an assignment definition string (see parseCode)
   class ParsonsCodeline {
-  // var ParsonsCodeline = function(codestring, widget) {
+    static trimRegexp = /^\s*(.*?)\s*$/;
     constructor (codestring, widget) {
       this.widget = widget;
       // TODO escape codestring
-      this.raw_code = "";
+      this.raw_code = '';
       this.indent = 0;
       this._toggles = [];
       this.numToggle = 0;
@@ -771,11 +887,11 @@
       this.origIdx = -1;
 
       if (codestring) {
-        // Consecutive lines to be dragged as a single block of code have strings "\\n" to
-        // represent newlines => replace them with actual new line characters "\n"
+        // Consecutive lines to be dragged as a single block of code have strings '\\n' to
+        // represent newlines => replace them with actual new line characters '\n'
         let distractorRegex = /#distractor\s*$/;
-        this.raw_code = codestring.replace(distractorRegex, "").replace(trimRegexp, "$1").replace(/\\n/g, "\n");
-        this.indent = codestring.length - codestring.replace(/^\s+/, "").length;
+        this.raw_code = codestring.replace(distractorRegex, '').replace(ParsonsCodeline.trimRegexp, '$1').replace(/\\n/g, '\n');
+        this.indent = codestring.length - codestring.replace(/^\s+/, '').length;
 
         if (codestring.match(distractorRegex)) {
           this.isDistractor = true;
@@ -786,7 +902,7 @@
         if (toggles) {
           this.numToggle = toggles.length;
           for (let item of toggles) {
-            var opts = item.substring(10, item.length - 2).split(widget.options.toggleSeparator);
+            let opts = item.substring(10, item.length - 2).split(widget.options.toggleSeparator);
             this.toggleVals.push(opts);
           }
         }
@@ -797,7 +913,7 @@
     get code() {
       let code = this.raw_code;
       if (this.numToggle) {
-        var toggles = code.match(this.widget.toggleRegexp);
+        let toggles = code.match(this.widget.toggleRegexp);
         for (let idx=0; idx<toggles.length; idx++) {
           if (idx >= this.numToggle) break;
           let toggle = toggles[idx];
@@ -824,17 +940,18 @@
   class ParsonsWidget {
     static GRADERS = GRADERS;
 
-    // var ParsonsWidget = function(options) {
     constructor (options) {
       // Contains line objects of the user-draggable code.
       // The order is not meaningful (unchanged from the initial state) but
       // indent property for each line object is updated as the user moves
       // codelines around. (see parseCode for line object description)
-      this.modified_lines = [];
+      this.modifiedLines = [];
+
       // contains line objects of distractors (see parseCode for line object description)
-      this.extra_lines = [];
+      this.extraLines = [];
+
       // contains line objects (see parseCode for line object description)
-      this.model_solution = [];
+      this.modelSolution = [];
 
       //To collect statistics, feedback should not be based on this
       this.user_actions = [];
@@ -846,7 +963,7 @@
       this.state_path = [];
       this.states = {};
 
-      var defaults = {
+      let defaults = {
         'x_indent': 50,
         'can_indent': true,
         'feedback_cb': false,
@@ -859,44 +976,23 @@
       this.options = $.extend({}, defaults, options);
       this.feedback_exists = false;
       this.id_prefix = options['sortableId'] + 'codeline';
-      this.toggleRegexp = new RegExp("\\$\\$toggle(" + this.options.toggleSeparator + ".*?)?\\$\\$", "g");
+      this.toggleRegexp = new RegExp('\\$\\$toggle(' + this.options.toggleSeparator + '.*?)?\\$\\$', 'g');
 
-      if (translations.hasOwnProperty(this.options.lang)) {
-        this.translations = translations[this.options.lang];
-      } else {
-        this.translations = translations['en'];
-      }
-
-      // translate trash_label and solution_label
-      if (!this.options.hasOwnProperty("trash_label")) {
-          this.options.trash_label = this.translations.trash_label;
-      }
-      if (!this.options.hasOwnProperty("solution_label")) {
-          this.options.solution_label = this.translations.solution_label;
-      }
-
-      if (this.options.hasOwnProperty("executable_code")) {
-        let initial_structures = this.parseCode(this.options.executable_code.split("\n"), 0);
+      if (this.options.hasOwnProperty('executable_code')) {
+        let initial_structures = this.parseCode(this.options.executable_code.split('\n'), 0);
         this.executable_lines = initial_structures.solution;
       }
-
-      this.FEEDBACK_STYLES = {
-        'correctPosition' : 'correctPosition',
-        'incorrectPosition' : 'incorrectPosition',
-        'correctIndent' : 'correctIndent',
-        'incorrectIndent' : 'incorrectIndent'
-      };
 
       // use grader passed as an option if defined and is a function
       if (this.options.grader && _.isFunction(this.options.grader)) {
         this.grader = new this.options.grader(this);
       } else {
         // initialize the grader
-        if (typeof(this.options.unittests) !== "undefined") { /// unittests are specified
+        if (typeof this.options.unittests !== 'undefined') { /// unittests are specified
           this.grader = new UnitTestGrader(this);
-        } else if (typeof(this.options.vartests) !== "undefined") { /// tests for variable values
+        } else if (typeof this.options.vartests !== 'undefined') { /// tests for variable values
           this.grader = new VariableCheckGrader(this);
-        } else { // "traditional" parson feedback
+        } else { // 'traditional' parson feedback
           this.grader = new LineBasedGrader(this);
         }
       }
@@ -926,9 +1022,10 @@
       //   orig: the original index of the line in the assignment definition string,
       //     for distractors this is not meaningful but for lines belonging to the
       //     solution, this is their expected position
-      $.each(lines, function(index, item) {
+      for (let idx=0; idx<lines.length; idx++) {
+        let item = lines[idx];
         lineObject = new ParsonsCodeline(item, that);
-        lineObject.origIdx = index;
+        lineObject.origIdx = idx;
         if (lineObject.isDistractor) {
           if (lineObject.code.length > 0) {
             distractors.push(lineObject);
@@ -939,16 +1036,23 @@
             indented.push(lineObject);
           }
         }
-      });
+      };
 
       let normalized = this.normalizeIndents(indented);
-      $.each(normalized, function(index, item) {
+      let noMatchingIds = [];
+      for (let item of normalized) {
         if (item.indent < 0) {
           // Indentation error
-          errors.push(this.translations.no_matching(normalized.origIdx));
+          noMatchingIds.push(item.id);
         }
         widgetData.push(item);
-      });
+      };
+
+      if (noMatchingIds) {
+        errors.push(formatLogMsg(LOG_MSG.NO_MATCHING, {
+          segmentIds: noMatchingIds
+        }));
+      }
 
       // Add ids to all codeline objects
       let id_prefix = this.id_prefix;
@@ -960,48 +1064,53 @@
 
       // Remove extra distractors if there are more alternative distrators
       // than should be shown at a time
-      //  var permutation = this.getRandomPermutation(distractors.length);
+      //  let permutation = this.getRandomPermutation(distractors.length);
       let selected_distractors = _.sample(distractors, max_distractors);
       for (let item of selected_distractors) {
         widgetData.push(item);
       }
 
-      let widgetInitial = deep_extend([], widgetData);
+      let widgetInitial = deepExtend([], widgetData);
       for (let item of widgetInitial) {
         item.indent = 0;
       }
 
       return {
         // an array of line objects specifying  the solution
-        solution: deep_extend([], normalized),
+        solution: deepExtend([], normalized),
 
         // an array of line objects specifying the requested number
         // of distractors (not all possible alternatives)
-        distractors: deep_extend([], selected_distractors),
+        distractors: deepExtend([], selected_distractors),
 
         // an array of line objects specifying the initial code arrangement
         // given to the user to use in constructing the solution
         widgetInitial: widgetInitial,
+
+        // Indentation
+        // TODO detect errors in solution
         errors: errors
       };
     }
 
     init(text) {
-      // TODO: Error handling, parseCode may return errors in an array in property named errors.
-      let initial_structures = this.parseCode(text.split("\n"), this.options.max_wrong_lines);
-      this.model_solution = initial_structures.solution;
-      this.extra_lines = initial_structures.distractors;
-      this.modified_lines = initial_structures.widgetInitial;
+      let initial_structures = this.parseCode(text.split('\n'), this.options.max_wrong_lines);
+      this.modelSolution = initial_structures.solution;
+      this.extraLines = initial_structures.distractors;
+      this.modifiedLines = initial_structures.widgetInitial;
+
+      // Error handling
+      return initial_structures.errors
     };
 
     // Get a line object by the full id including id prefix
     // (see parseCode for description of line objects)
     getLineById(id, targetGroup=null) {
-      var index = -1;
+      let index = -1;
       if (!targetGroup) {
-        targetGroup = this.modified_lines;
+        targetGroup = this.modifiedLines;
       }
-      for (var i = 0; i < targetGroup.length; i++) {
+      for (let i = 0; i < targetGroup.length; i++) {
         if (targetGroup[i].id == id) {
           index = i;
           break;
@@ -1018,21 +1127,19 @@
     // i.e. code is malformed, value of indent may be -1.
     // For example, the first line may not be indented.
     normalizeIndents(lines) {
-      var normalized = [];
-      var new_line;
-      var match_indent = function(index) {
+      let normalized = [];
+      let new_line;
+      let match_indent = function(index) {
         //return line index from the previous lines with matching indentation
-        for (var i = index-1; i >= 0; i--) {
+        for (let i = index-1; i >= 0; i--) {
           if (lines[i].indent == lines[index].indent) {
             return normalized[i].indent;
           }
         }
         return -1;
       };
-      for ( var i = 0; i < lines.length; i++ ) {
-        //create shallow copy from the line object
-        // TODO ?
-      new_line = lines[i].clone();
+      for ( let i = 0; i < lines.length; i++ ) {
+        new_line = lines[i].clone();
         if (i === 0) {
           new_line.indent = 0;
           if (lines[i].indent !== 0) {
@@ -1054,8 +1161,7 @@
     getFeedback(data) {
       let codeLines = [];
       // update indent
-      // for (var clId in data){
-      for (var clData of data){
+      for (let clData of data){
         let id = this.id_prefix + clData.idx;
         let cl = this.getLineById(id);
         if (!cl) continue;
@@ -1065,19 +1171,8 @@
         codeLines.push(cl);
       }
 
-      // let codeLines = this.getModifiedCode(Object.keys(data));
-       this.feedback_exists = true;
-       var fb = this.grader.grade(codeLines);
-
-      // TODO use different way to detect this
-       // log the feedback and return; based on the type of grader
-       if ('html' in fb) { // unittest/vartests type feedback
-        //  this.addLogEntry({type: "feedback", tests: fb.tests, success: fb.success});
-         return { feedback: fb.html, success: fb.success };
-       } else {
-        //  this.addLogEntry({type: "feedback", errors: fb.log_errors, success: fb.success});
-         return fb.errors;
-       }
+      this.feedback_exists = true;
+      return this.grader.grade(codeLines);
      };
 
   };
@@ -1085,22 +1180,17 @@
   window['ParsonsWidget'] = ParsonsWidget;
 
 
-  // TODO support predefined order + predefined indent
   class ParsonsJS {
-  // var ParsonsJS = function(config) {
     constructor(config) {
-      // do basic dom operation
-      // get sortableId/ trashId/ turtle canvas?
-
       this.parson = new ParsonsWidget(config);
       this.codeStr = config.codeStr;
       this.order = config.order;
-      // when get feedback is triggered. get the item ids in order, send item ids
-      // to ParsonsWidget
+      this.logs = [];
     }
 
     init() {
-      this.parson.init(this.codeStr);
+      let errors = this.parson.init(this.codeStr);
+      return errors;
     }
 
     initUI() {
@@ -1110,6 +1200,11 @@
       } else {
         this.shuffleLines();
       }
+
+      // Log the original codelines in the exercise in order to be able to
+      // match the input/output hashes to the code later on. We need only a
+      // few properties of the codeline objects
+      this._addLog('init', this._getData());
     }
 
     codeLineAddToggles = function(codeLine) {
@@ -1138,9 +1233,9 @@
     };
 
     codeLinesToHTML(codelineIDs, destinationID) {
-      var lineHTML = [];
-      for(var id in codelineIDs) {
-        var line = this.parson.getLineById(codelineIDs[id]);
+      let lineHTML = [];
+      for(let id in codelineIDs) {
+        let line = this.parson.getLineById(codelineIDs[id]);
         lineHTML.push(this.codeLineToHTML(line));
       }
       return '<ul id="ul-' + destinationID + '">' + lineHTML.join('') + '</ul>';
@@ -1148,14 +1243,14 @@
 
     getIndentNew($item, leftPosDiff) {
       let parson = this.parson;
-      let indentCurr = $item.prop("data-indent");
-      var indentNew = parson.options.can_indent ? indentCurr + Math.floor(leftPosDiff / parson.options.x_indent) : 0;
+      let indentCurr = $item.prop('data-indent');
+      let indentNew = parson.options.can_indent ? indentCurr + Math.floor(leftPosDiff / parson.options.x_indent) : 0;
       indentNew = Math.max(0, indentNew);
       return indentNew;
     };
 
     updateHTMLIndent($item, indNew) {
-      $item.css("margin-left", this.parson.options.x_indent * indNew + "px");
+      $item.css('margin-left', this.parson.options.x_indent * indNew + 'px');
       $item.prop('data-indent', indNew);
     };
 
@@ -1163,7 +1258,7 @@
       $codeline.find('.jsparson-toggle').each(function(idx) {
         let $toggle = $(this),
             tIdx = toggleIdxs[idx],
-            choices = $toggle.data("jsp-options");
+            choices = $toggle.data('jsp-options');
 
         if (tIdx < 0 || !choices || tIdx > choices.length) {
           return
@@ -1185,41 +1280,30 @@
       $toggles.click(function () {
         let $toggle = $(this),
             curVal = $toggle.text(),
-            choices = $toggle.data("jsp-options"),
+            choices = $toggle.data('jsp-options'),
             newIdx = (choices.indexOf(curVal) + 1) % choices.length,
             newVal = choices[newIdx],
-            $parent = $toggle.parent("li");
+            $parent = $toggle.parent('li');
 
         // change the shown toggle element
         $toggle.text(newVal);
         $toggle.prop('data-idx', newIdx);
-
-        // log the event
-        // that.parson.addLogEntry({
-        //   type: "toggle",
-        //   oldvalue: curVal,
-        //   newvalue: newVal,
-        //   target: $parent[0].id,
-        //   toggleindex: $parent.find(".jsparson-toggle").index($toggle)
-        // });
       })
     }
 
     createHTMLFromLists(solutionIDs, trashIDs) {
       let parson = this.parson;
       let options = parson.options;
-      var html;
-      let $targetBox = $("#" + options.sortableId);
+      let html;
+      let $targetBox = $('#' + options.sortableId);
 
       if (options.trashId) {
-        html = (options.trash_label ? '<p>' + options.trash_label + '</p>' : '')
-          + this.codeLinesToHTML(trashIDs, options.trashId);
-        let $trashBox = $("#" + options.trashId);
+        html = this.codeLinesToHTML(trashIDs, options.trashId);
+        let $trashBox = $('#' + options.trashId);
         $trashBox.html(html);
         this.initSortableBox($trashBox);
 
-        html = (options.solution_label ? '<p>' + options.solution_label + '</p>' : '')
-          + this.codeLinesToHTML(solutionIDs, options.sortableId);
+        html = this.codeLinesToHTML(solutionIDs, options.sortableId);
         $targetBox.html(html);
       } else {
         html = this.codeLinesToHTML(solutionIDs, options.sortableId);
@@ -1227,11 +1311,9 @@
       }
       this.initSortableBox($targetBox);
 
-      var that = this;
-      var $sortable = $("#ul-" + options.sortableId).sortable({
-          start : function() {
-            // that.clearFeedback();
-          },
+      let that = this;
+      let $sortable = $('#ul-' + options.sortableId).sortable({
+          start : function() {},
           stop : function(event, ui) {
             if ($(event.target)[0] != ui.item.parent()[0]) {
               return;
@@ -1239,28 +1321,20 @@
             let $item = ui.item;
             let itemId = $item.id;
             let posDiff = ui.position.left - ui.item.parent().position().left;
-            // that.updateIndent(indDiff, itemId);
             let indNew = that.getIndentNew($item, posDiff);
             that.updateHTMLIndent($item, indNew);
-            // parson.addLogEntry({type: "moveOutput", target: itemId}, true);
           },
           receive : function(event, ui) {
             let $item = ui.item;
-            let itemId = $item.id;
             let posDiff = ui.position.left - ui.item.parent().position().left;
-            // that.updateIndent(indDiff, itemId);
-            // that.updateHTMLIndent(itemId);
             let indNew = that.getIndentNew($item, posDiff);
             that.updateHTMLIndent($item, indNew);
-
-            // parson.addLogEntry({type: "addOutput", target: itemId}, true);
           },
           grid : parson.options.can_indent ? [parson.options.x_indent, 1 ] : false
       });
 
-      // $sortable.addClass("output");
       if (options.trashId) {
-        var $trash = $("#ul-" + options.trashId).sortable({
+        let $trash = $('#ul-' + options.trashId).sortable({
           start: function() {
           },
           receive: function(event, ui) {
@@ -1271,24 +1345,11 @@
               // line moved to output and logged there
               return;
             }
-            // parson.addLogEntry({type: "moveInput", target: ui.item.id}, true);
           }
         });
         $trash.sortable('option', 'connectWith', $sortable);
         $sortable.sortable('option', 'connectWith', $trash);
       }
-
-      // Log the original codelines in the exercise in order to be able to
-      // match the input/output hashes to the code later on. We need only a
-      // few properties of the codeline objects
-
-      // TODO what is this?
-      // var bindings = [];
-      // for (var i = 0; i < this.modified_lines.length; i++) {
-      //   var line = this.modified_lines[i];
-      //   bindings.push({code: line.code, distractor: line.distractor})
-      // }
-      // this.addLogEntry({type: 'init', time: new Date(), bindings: bindings});
     };
 
     getRandomPermutation = function(n) {
@@ -1297,12 +1358,12 @@
 
     shuffleLines(idlist=null) {
       let parson = this.parson;
-      // var permutation = (parson.options.permutation ? parson.options.permutation : this.getRandomPermutation)(parson.modified_lines.length);
+      // let permutation = (parson.options.permutation ? parson.options.permutation : this.getRandomPermutation)(parson.modifiedLines.length);
       if (!idlist) {
-        let permutation = this.getRandomPermutation(parson.modified_lines.length);
+        let permutation = this.getRandomPermutation(parson.modifiedLines.length);
         idlist = [];
-        for(var idx of permutation) {
-            idlist.push(parson.modified_lines[idx].id);
+        for(let idx of permutation) {
+            idlist.push(parson.modifiedLines[idx].id);
         }
       }
 
@@ -1333,9 +1394,9 @@
       }
     }
 
-    getFeedback = function() {
+    _getData = function () {
       // get codeLineIds from DOM
-      let codeLineIds = $("#ul-" + this.parson.options.sortableId).sortable('toArray');
+      let codeLineIds = $('#ul-' + this.parson.options.sortableId).sortable('toArray');
 
       // get order + indent
       let data = [];
@@ -1355,7 +1416,22 @@
           toggleIdxs: toggleIdxs
         })
       }
+
+      return data;
+    }
+
+    _addLog = function (oper, data) {
+      this.logs.push({
+        oper: oper,
+        data: data,
+        time: new Date(),
+      })
+    }
+
+    getFeedback = function() {
+      let data = this._getData();
       let fb = this.parson.getFeedback(data);
+      this._addLog('feedback', data);
       return fb;
     };
 
