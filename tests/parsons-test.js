@@ -141,7 +141,7 @@ QUnit.module('Initialization of the widget', function() {
 
     var pjs = new ParsonsJS({
       'sortableId': 'main',
-      'max_wrong_lines': 1,
+      'maxWrongLines': 1,
       codeStr: initial
     });
     pjs.initUI();
@@ -161,7 +161,7 @@ QUnit.module('Feedback', function() {
     var initial = 'foo\nbar\n';
     var pjs = new ParsonsJS({
       'sortableId': 'main',
-      'max_wrong_lines': 1,
+      'maxWrongLines': 1,
       order: [{idx: 0}, {idx: 1}],
       codeStr: initial
     });
@@ -173,7 +173,7 @@ QUnit.module('Feedback', function() {
     var initial = 'foo\nbar\n';
     var pjs = new ParsonsJS({
       'sortableId': 'main',
-      'max_wrong_lines': 1,
+      'maxWrongLines': 1,
       order: [{idx: 1}, {idx: 0}],
       codeStr: initial
     });

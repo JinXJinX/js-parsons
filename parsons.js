@@ -1,45 +1,5 @@
 'use strict';
 (function($, _) { // wrap in anonymous function to not show some helper variables
-
-  let translations = {
-    en: {
-      trash_label: 'Drag from here',
-      solution_label: 'Construct your solution here',
-      order: function() {
-        return 'Code fragments in your program are wrong, or in wrong order. This can be fixed by moving, removing, or replacing highlighted fragments.';},
-      lines_missing: function() {
-        return "Your program has too few code fragments.";},
-      lines_too_many: function() {
-        return "Your program has too many code fragments.";},
-      no_matching: function(lineNro) {
-        return "Based on language syntax, the highlighted fragment (" + lineNro + ") is not correctly indented."; },
-      no_matching_open: function(lineNro, block) {
-        return "The " + block + " ended on line " + lineNro + " never started."; },
-      no_matching_close: function(lineNro, block) {
-        return "Block " + block + " defined on line " + lineNro + " not ended properly";
-      },
-      block_close_mismatch: function(closeLine, closeBlock, openLine, inBlock) {
-        return "Cannot end block " + closeBlock + " on line " + closeLine + " when still inside block " + inBlock + " started on line " + openLine;
-      },
-      block_structure: function(lineNro) { return "The highlighted fragment " + lineNro + " belongs to a wrong block (i.e. indentation)."; },
-      unittest_error: function(errormsg) {
-        return "<span class='msg'>Error in parsing/executing your program</span><br/> <span class='errormsg'>" + errormsg + "</span>";
-      },
-      unittest_output_assertion: function(expected, actual) {
-      return "Expected output: <span class='expected output'>" + expected + "</span>" +
-            "Output of your program: <span class='actual output'>" + actual + "</span>";
-      },
-      unittest_assertion: function(expected, actual) {
-      return "Expected value: <span class='expected'>" + expected + "</span><br>" +
-            "Actual value: <span class='actual'>" + actual + "</span>";
-      },
-      variabletest_assertion: function(varname, expected, actual) {
-      return "Expected value of variable " + varname + ": <span class='expected'>" + expected + "</span><br>" +
-            "Actual value: <span class='actual'>" + actual + "</span>";
-      }
-    }
-  };
-
   const LOG_MSG = {
     ORDER: {
       id: 1,
@@ -65,7 +25,7 @@
       id: 6,
       msg: 'Block not ended properly'
     },
-    BLOCK_CLOSE_MISMATCH: {
+    blockClose_MISMATCH: {
       id: 7,
       msg: 'Block mismatched.'
     },
@@ -108,18 +68,18 @@
   const PYTHON_INDENTS = _pyIndents;
 
   let defaultToggleTypeHandlers = {
-    boolean: ["True", "False"],
-    compop: ["<", ">", "<=", ">=", "==", "!="],
-    mathop: ["+", "-", "*", "/"],
-    boolop: ["and", "or"],
+    boolean: ['True', 'False'],
+    compop: ['<', '>', '<=', '>=', '==', '!='],
+    mathop: ['+', '-', '*', '/'],
+    boolop: ['and', 'or'],
     range: function($item) {
-        let min = parseFloat($item.data("min") || "0"),
-            max = parseFloat($item.data("max") || "10"),
-            step = parseFloat($item.data("step") || "1"),
+        let min = parseFloat($item.data('min') || '0'),
+            max = parseFloat($item.data('max') || '10'),
+            step = parseFloat($item.data('step') || '1'),
             opts = [],
             curr = min;
         while (curr <= max) {
-          opts.push("" + curr);
+          opts.push('' + curr);
           curr += step;
         }
         return opts;
@@ -130,31 +90,31 @@
   const langBlocks = {
     pseudo: {
       open: {
-        "^\s*IF.*THEN\s*$": "IF", "^\s*ELSE\s*$":"IF", // IF
-        "^\s*WHILE.*DO\s*$": "WHILE", // WHILE
-        "^\s*REPEAT.*TIMES\s*$": "REPEAT..TIMES",
-        "^\s*REPEAT\s*$": "REPEAT",   // REPEAT ... UNTIL
-        "^\s*FOR.*DO\s*$": "FOR",
-        "^\s*FOR.*TO.*\s*$": "FOR",
-        "^\s*MODULE.*\\)\s*$": "MODULE", "^\s*MODULE.*RETURNS.*$": "MODULE",
-        "^\s*DO\s*$": "DO..WHILE"
+        '^\s*IF.*THEN\s*$': 'IF', '^\s*ELSE\s*$':'IF', // IF
+        '^\s*WHILE.*DO\s*$': 'WHILE', // WHILE
+        '^\s*REPEAT.*TIMES\s*$': 'REPEAT..TIMES',
+        '^\s*REPEAT\s*$': 'REPEAT',   // REPEAT ... UNTIL
+        '^\s*FOR.*DO\s*$': 'FOR',
+        '^\s*FOR.*TO.*\s*$': 'FOR',
+        '^\s*MODULE.*\\)\s*$': 'MODULE', '^\s*MODULE.*RETURNS.*$': 'MODULE',
+        '^\s*DO\s*$': 'DO..WHILE'
       },
       close: {
-        "^\s*ELSE\s*$": "IF", "^\s*ENDIF\s*$": "IF", // ENDIF
-        "^\s*ENDWHILE\s*$": "WHILE",
-        "^\s*ENDREPEAT\s*$": "REPEAT..TIMES",
-        "^\s*UNTIL.*\s*$": "REPEAT",
-        "^\s*ENDFOR\s*$": "FOR",
-        "^\s*ENDMODULE\s*$": "MODULE",
-        "^\s*WHILE(?!.*DO)": "DO..WHILE"
+        '^\s*ELSE\s*$': 'IF', '^\s*ENDIF\s*$': 'IF', // ENDIF
+        '^\s*ENDWHILE\s*$': 'WHILE',
+        '^\s*ENDREPEAT\s*$': 'REPEAT..TIMES',
+        '^\s*UNTIL.*\s*$': 'REPEAT',
+        '^\s*ENDFOR\s*$': 'FOR',
+        '^\s*ENDMODULE\s*$': 'MODULE',
+        '^\s*WHILE(?!.*DO)': 'DO..WHILE'
       }
     },
     java: {
       open: {
-        "^.*\{\s*$": "block"
+        '^.*\{\s*$': 'block'
       },
       close: {
-        "^.*\}\s*$": "block"
+        '^.*\}\s*$': 'block'
       }
     }
   };
@@ -181,15 +141,15 @@
 
   //Return executable code in one string
   let codelinesAsString = function(codeLines) {
-    let executableCode = "";
+    let executableCode = '';
     for (let codeLine of codeLines) {
       // split codeblocks on br elements
       let lines = codeLine.code.split(/<br\s*\/?>/);
 
       // go through all the lines
-      for (let i = 0; i < lines.length; i++) {
-        // add indents and get the text for the line (to remove the syntax highlight html elements)
-        executableCode += PYTHON_INDENTS[codeLine.indent] + $("<span>" + lines[i] + "</span>").text() + "\n";
+      for (let line of lines) {
+        // add indents and get the text for the line (to remove the html tags)
+        executableCode += PYTHON_INDENTS[codeLine.indent] + stripHtml(line) + '\n';
       }
     };
     return executableCode;
@@ -226,7 +186,7 @@
     // function for reading python imports with skulpt
     function builtinRead(x) {
       if (typeof Sk.builtinFiles === 'undefined' || typeof Sk.builtinFiles['files'][x] === 'undefined')
-        throw "File not found: '" + x + "'";
+        throw 'File not found: "' + x + '"';
       return Sk.builtinFiles['files'][x];
     }
     // configure Skulpt
@@ -251,7 +211,7 @@
       result = {'variables': {}},
       varname;
     try {
-      execResult = pythonExec(code, options.python3, options.exec_limit);
+      execResult = pythonExec(code, options.python3, options.execLimit);
     } catch (e) {
       return {'_output': output, '_error': '' + e};
     }
@@ -274,7 +234,7 @@
       return '"' + varValue + '"';
     } else if (varType === 'boolean') { // Python booleans with capital first letter
       return varValue ? 'True' : 'False';
-    } else if ($.isArray(varValue)) { // JavaScript arrays
+    } else if (Array.isArray(varValue)) { // JavaScript arrays
       return '[' + varValue.join(', ') + ']';
     } else if (varType === 'object' && varValue.tp$name === 'number') { // Python numbers
       return varValue.v;
@@ -291,19 +251,16 @@
     }
   };
 
-  let getErrLog = function (errMsg, segmentIds=null, lineNums=null, expectedVal=null, actualVal=null) {
-    return {
-      id: errMsg.id,
-      msg: errMsg.msg,
-      segmentIds: segmentIds,
-      lineNums: lineNums,
-      expectedVal: expectedVal,
-      actualVal: actualVal,
-    }
-  }
-
   let formatLogMsg = function (logMsg, data) {
     return Object.assign({}, data, logMsg);
+  }
+
+  let stripHtml = function (str) {
+
+    let tmp = document.createElement('div');
+    tmp.innerHTML = str;
+    let rst = tmp.textContent || tmp.innerText || '';
+    return rst;
   }
 
   // Grader that will execute the code and check variable values after that
@@ -339,14 +296,14 @@
 
     grade(codeLines) {
       let parson = this.parson;
-      let student_code = parson.normalizeIndents(codeLines);
-      let lines_to_check = Math.min(student_code.length, parson.modelSolution.length);
-      let errors = [], log_errors = [], incorrectLines = [], incorrectClIds = [];
+      let studentCodes = parson.normalizeIndents(codeLines);
+      let linesToCheck = Math.min(studentCodes.length, parson.modelSolution.length);
+      let errors = [], incorrectLines = [], incorrectClIds = [];
       let studentCodeLineObjects = [];
-      let wrong_order = false;
+      let wrongOrder = false;
 
       // Find the line objects for the student's code
-      for (let code of student_code) {
+      for (let code of studentCodes) {
         studentCodeLineObjects.push(code.clone());
       }
 
@@ -376,7 +333,7 @@
             // Could not find the line in the model solution at all,
             // it must be a distractor
             // => add to feedback, log, and ignore in LIS computation
-            wrong_order = true;
+            wrongOrder = true;
             lineObject.lisIgnore = true;
 
             // incorrectLines.push(lineObject.origIdx);
@@ -411,12 +368,12 @@
       };
 
       if (inv.length > 0 || incorrectLines.length > 0) {
-        wrong_order = true;
+        wrongOrder = true;
       }
 
-      if (wrong_order) {
+      if (wrongOrder) {
         let expectedOrder = parson.modelSolution.map(cl => cl.id),
-            actualOrder = student_code.map(cl => cl.id);
+            actualOrder = studentCodes.map(cl => cl.id);
         errors.push(formatLogMsg(LOG_MSG.ORDER, {
           segmentIds: incorrectClIds,
           expectedVal: expectedOrder,
@@ -426,7 +383,7 @@
 
       // Check the number of lines in student's code
       let expectedSize = parson.modelSolution.length;
-      let actualSize = student_code.length;
+      let actualSize = studentCodes.length;
       if (expectedSize < actualSize) {
         errors.push(formatLogMsg(LOG_MSG.LINE_TOO_MANY, {
           expectedVal: expectedSize,
@@ -441,13 +398,13 @@
 
       // Finally, check indent if no other errors
       if (errors.length === 0) {
-        for (let idx = 0; idx < lines_to_check; idx++) {
-          let cl = student_code[idx];
+        for (let idx = 0; idx < linesToCheck; idx++) {
+          let cl = studentCodes[idx];
           let expectedIndent = parson.modelSolution[idx].indent;
           let actualIndent = cl.indent;
           if (
             actualIndent !== expectedIndent
-            && ((!parson.options.first_error_only) || errors.length === 0)
+            && ((!parson.options.firstErrorOnly) || errors.length === 0)
           ) {
             errors.push(formatLogMsg(LOG_MSG.BLOCK_STRUCTURE, {
               segmentIds: [cl.id],
@@ -478,8 +435,8 @@
           failedTests = [];
 
       for (let testdata of options.vartests) {
-        let student_code = codelinesAsString(codeLines);
-        let executableCode = (testdata.initcode || '') + '\n' + student_code + '\n' + (testdata.finalcode || '');
+        let studentCodes = codelinesAsString(codeLines);
+        let executableCode = (testdata.initcode || '') + '\n' + studentCodes + '\n' + (testdata.finalcode || '');
         let variables, expectedVals;
 
         if ('variables' in testdata) {
@@ -496,29 +453,29 @@
               code: testdata.initcode,
               detail: testdata.message
             },
-            expected_value,
-            actual_value;
+            expectedVal,
+            actualVal;
 
         if ('_error' in res) {
           failedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ERROR, logData));
         } else {
           for (let j = 0; j < variables.length; j++) {
             let variable = variables[j],
-                variableSuccess;
+                variableSuc;
             if (variable === '__output') { // checking output of the program
-              expected_value = expectedVals[variable];
-              actual_value = res._output;
-              variableSuccess = (actual_value == expected_value); // should we do a strict test??
+              expectedVal = expectedVals[variable];
+              actualVal = res._output;
+              variableSuc = (actualVal == expectedVal); // should we do a strict test??
             } else {
-              expected_value = formatVariableValue(expectedVals[variable]);
-              actual_value = formatVariableValue(res.variables[variable]);
-              variableSuccess = (actual_value == expected_value);  // should we do a strict test??
+              expectedVal = formatVariableValue(expectedVals[variable]);
+              actualVal = formatVariableValue(res.variables[variable]);
+              variableSuc = (actualVal == expectedVal);  // should we do a strict test??
             }
 
-            logData.expectedVal = expected_value;
-            logData.actualVal = actual_value;
+            logData.expectedVal = expectedVal;
+            logData.actualVal = actualVal;
 
-            if(variableSuccess) {
+            if(variableSuc) {
               passedTests.push(formatLogMsg(LOG_MSG.VARIABLETEST_ASSERTION_SUC, logData));
             } else {
               failedTests.push(formatLogMsg(LOG_MSG.VARIABLETEST_ASSERTION_ERR, logData));
@@ -549,7 +506,7 @@
   //                  Defaults to studentCanvas.
   //
   // Grading is based on comparing the commands executed by the model and student turtle.
-  // If the executable_code option is also specified, the code on each line of that option will
+  // If the executableCode option is also specified, the code on each line of that option will
   // be executed instead of the code in the student constructed lines. Note, that the student
   // code should use the variable myTurtle for commands to control the turtle in order for the
   // grading to work.
@@ -599,10 +556,10 @@
       // set the correct canvas where the turtle should draw
       Sk.canvas = this.parson.options.turtleStudentCanvas || 'studentCanvas';
       // Pass the grading on to either the LangTranslationGrader or VariableChecker
-      if (this.parson.executable_lines) {
-        let execLines = this.parson.executable_lines;
+      if (this.parson.executableLines) {
+        let execLines = this.parson.executableLines;
         let realCls = [];
-        // TODO update executable_lines indent
+        // TODO update executableLines indent
         for (let cl of codeLines) {
           let executableCl = this.parson.getLineById(cl.id, execLines);
           executableCl.indent = cl.indent;
@@ -634,12 +591,12 @@
       let executableCode = studentCodeStr + '\n' + unittests;
 
       // if there is code to add before student code, add it
-      if (parson.options.unittest_code_prepend) {
-        executableCode = parson.options.unittest_code_prepend + '\n' + executableCode;
+      if (parson.options.unittestCodePrepend) {
+        executableCode = parson.options.unittestCodePrepend + '\n' + executableCode;
       }
 
       try {
-        execResult = pythonExec(executableCode, options.python3, options.exec_limit);
+        execResult = pythonExec(executableCode, options.python3, options.execLimit);
         mainmod = execResult.mainmod;
         result = JSON.parse(mainmod.tp$getattr('_test_result').v);
       } catch (e) {
@@ -648,11 +605,11 @@
 
       // go through the results and generate HTML feedback
       for (let res of result) {
-        if (res.status === "error") { // errors in execution
+        if (res.status === 'error') { // errors in execution
           failedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ERR, {
             detail: stripLinenumberIfNeeded(
               res._error,
-              parson.options.unittest_code_prepend,
+              parson.options.unittestCodePrepend,
               studentCodeStr
             )
           }))
@@ -665,7 +622,7 @@
             detail: stripLinenumberIfNeeded(res.feedback)
           }
 
-          if (res.status === "fail") {
+          if (res.status === 'fail') {
             failedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ASSERTION_ERR, logData))
           } else {
             passedTests.push(formatLogMsg(LOG_MSG.UNITTEST_ASSERTION_SUC, logData))
@@ -690,16 +647,16 @@
     }
 
     // Replaces codelines in the student's solution with the codelines
-    // specified in the executable_code option of the parsons widget.
-    // The executable_code option can be an array of lines or a string (in
+    // specified in the executableCode option of the parsons widget.
+    // The executableCode option can be an array of lines or a string (in
     // which case it will be split on newline.
     // For each line in the model solution, there should be a matching line
-    // in the executable_code.
-    _replaceCodelines(student_code) {
-      let executableCode = this.parson.executable_lines;
+    // in the executableCode.
+    _replaceCodelines(studentCodes) {
+      let executableCode = this.parson.executableLines;
       let codeLines = [];
 
-      for (let item of student_code) {
+      for (let item of studentCodes) {
         let execCodeLine = executableCode[item.idx].clone();
         execCodeLine.indent = item.indent;
         execCodeLine.toggleIdxs = item.toggleIdxs;
@@ -710,15 +667,15 @@
     };
 
     grade(codeLines) {
-      let student_code = this.parson.normalizeIndents(codeLines);
+      let studentCodes = this.parson.normalizeIndents(codeLines);
       // Check opening and closing blocks.
-      // The block_open and block_close are expected to be maps with regexps as properties and
+      // The blockOpen and blockClose are expected to be maps with regexps as properties and
       // names of blocks as the property values. For example, a pseudocode IF..THEN..ELSE..ENDIF
       // blocks can be defined like this:
-      //    open = {"^\s*IF.*THEN\s*$": "IF", '^\s*ELSE\s*$':'IF'};
+      //    open = {'^\s*IF.*THEN\s*$': 'IF', '^\s*ELSE\s*$':'IF'};
       //    close = {'^s*ELSE\s*$': 'IF', '^\s*ENDIF\s*$': 'IF'};
-      let open = this.parson.options.block_open,
-          close = this.parson.options.block_close,
+      let open = this.parson.options.blockOpen,
+          close = this.parson.options.blockClose,
           blockErrors = [],
           errors = [];
       let progLang = this.parson.options.programmingLang;
@@ -739,10 +696,10 @@
         let blockCloseMismatchIds = [];
 
         // go through all student code lines
-        for (let idx = 0; idx < student_code.length; idx++) {
+        for (let idx = 0; idx < studentCodes.length; idx++) {
           let isClose = false, // was a new blocks opened on this line
               isOpen = false,  // was a block closed on this line
-              item = student_code[idx],
+              item = studentCodes[idx],
               line = item.code, // code of the line
               idx1Based = idx + 1,
               topBlock, bO;
@@ -766,7 +723,7 @@
                 // blockErrors.push(this.parson.translations.no_matching_open(idx1Based, close[blockClose]));
                 noMatchingOpenIds.push(item.id);
               } else if (close[blockClose] !== topBlock.name) { // incorrect closing block
-                // blockErrors.push(this.parson.translations.block_close_mismatch(idx1Based, close[blockClose], topBlock.line, topBlock.name));
+                // blockErrors.push(this.parson.translations.blockClose_mismatch(idx1Based, close[blockClose], topBlock.line, topBlock.name));
                 blockCloseMismatchIds.push(item.id);
               } else if (item.indent !== topBlock.indent) { // incorrect indent
                 // blockErrors.push(this.parson.translations.no_matching(idx1Based));
@@ -799,7 +756,7 @@
           if (!isClose && !isOpen && blocks.length > 0) {
             // indentation should match previous indent if inside block
             // and be greater than the indent of the block opening the block (minIndent)
-            if ((prevIndent && student_code[i].indent !== prevIndent) ||
+            if ((prevIndent && studentCodes[i].indent !== prevIndent) ||
                 item.indent <= minIndent) {
               noMatchingIds.push(item.id);
             }
@@ -834,7 +791,7 @@
           }))
         }
         if (blockCloseMismatchIds) {
-          errors.push(formatLogMsg(LOG_MSG.BLOCK_CLOSE_MISMATCH, {
+          errors.push(formatLogMsg(LOG_MSG.blockClose_MISMATCH, {
             segmentIds: blockCloseMismatchIds
           }))
         }
@@ -842,12 +799,12 @@
 
       // if there were errors in the blocks, give feedback and don't execute the code
       if (errors) {
-        return { success: false, errors: errors}
+        return {success: false, errors: errors}
       }
 
       // Replace codelines show with codelines to be executed
       // Get real executable codes with indent
-      codeLines = this._replaceCodelines(student_code);
+      codeLines = this._replaceCodelines(studentCodes);
       // run unit tests or variable check grader
       if (this.parson.options.unittests) {
         return new UnitTestGrader(this.parson).grade(codeLines);
@@ -871,12 +828,11 @@
   // a code string of an assignment definition string (see parseCode)
   class ParsonsCodeline {
     static trimRegexp = /^\s*(.*?)\s*$/;
+    static distractorRegex = /#distractor\s*$/;
     constructor (codestring, widget) {
       this.widget = widget;
-      // TODO escape codestring
-      this.raw_code = '';
+      this.rawCode = '';
       this.indent = 0;
-      this._toggles = [];
       this.numToggle = 0;
       this.toggleVals = [];
       this.toggleIdxs = [];
@@ -889,16 +845,16 @@
       if (codestring) {
         // Consecutive lines to be dragged as a single block of code have strings '\\n' to
         // represent newlines => replace them with actual new line characters '\n'
-        let distractorRegex = /#distractor\s*$/;
-        this.raw_code = codestring.replace(distractorRegex, '').replace(ParsonsCodeline.trimRegexp, '$1').replace(/\\n/g, '\n');
+        codestring = stripHtml(codestring);
+        this.rawCode = codestring.replace(ParsonsCodeline.distractorRegex, '').replace(ParsonsCodeline.trimRegexp, '$1').replace(/\\n/g, '\n');
         this.indent = codestring.length - codestring.replace(/^\s+/, '').length;
 
-        if (codestring.match(distractorRegex)) {
+        if (codestring.match(ParsonsCodeline.distractorRegex)) {
           this.isDistractor = true;
           this.indent = -1;
         }
 
-        let toggles = this.raw_code.match(this.widget.toggleRegexp);
+        let toggles = this.rawCode.match(this.widget.toggleRegexp);
         if (toggles) {
           this.numToggle = toggles.length;
           for (let item of toggles) {
@@ -911,7 +867,7 @@
 
     // get code with toggle values
     get code() {
-      let code = this.raw_code;
+      let code = this.rawCode;
       if (this.numToggle) {
         let toggles = code.match(this.widget.toggleRegexp);
         for (let idx=0; idx<toggles.length; idx++) {
@@ -926,9 +882,9 @@
     }
 
     clone() {
-      let new_cl = new ParsonsCodeline();
-      Object.assign(new_cl, this);
-      return new_cl;
+      let newCl = new ParsonsCodeline();
+      Object.assign(newCl, this);
+      return newCl;
     }
   };
 
@@ -953,34 +909,25 @@
       // contains line objects (see parseCode for line object description)
       this.modelSolution = [];
 
-      //To collect statistics, feedback should not be based on this
-      this.user_actions = [];
-
       // (optional) executable codes
-      this.executable_lines = [];
-
-      //State history for feedback purposes
-      this.state_path = [];
-      this.states = {};
+      this.executableLines = [];
 
       let defaults = {
-        'x_indent': 50,
-        'can_indent': true,
-        'feedback_cb': false,
-        'first_error_only': true,
-        'max_wrong_lines': 10,
+        'xIndent': 50,
+        'canIndent': true,
+        'firstErrorOnly': true,
+        'maxWrongLines': 10,
         'lang': 'en',
         'toggleSeparator': '::'
       };
 
       this.options = $.extend({}, defaults, options);
-      this.feedback_exists = false;
-      this.id_prefix = options['sortableId'] + 'codeline';
+      this.idPrefix = options['sortableId'] + 'codeline';
       this.toggleRegexp = new RegExp('\\$\\$toggle(' + this.options.toggleSeparator + '.*?)?\\$\\$', 'g');
 
-      if (this.options.hasOwnProperty('executable_code')) {
-        let initial_structures = this.parseCode(this.options.executable_code.split('\n'), 0);
-        this.executable_lines = initial_structures.solution;
+      if (this.options.hasOwnProperty('executableCode')) {
+        let initialStruc = this.parseCode(this.options.executableCode.split('\n'), 0);
+        this.executableLines = initialStruc.solution;
       }
 
       // use grader passed as an option if defined and is a function
@@ -1005,7 +952,7 @@
     //   any possible distractors
     // max_distractrors: The number of distractors allowed to be included with
     //   the lines required in the solution
-    parseCode (lines, max_distractors) {
+    parseCode (lines, maxDistractors) {
       let distractors = [],
       indented = [],
       widgetData = [],
@@ -1055,18 +1002,18 @@
       }
 
       // Add ids to all codeline objects
-      let id_prefix = this.id_prefix;
+      let idPrefix = this.idPrefix;
       let codelines = [...widgetData, ...distractors];
       for (let idx = 0; idx < codelines.length; idx++) {
-        codelines[idx].id = id_prefix + idx;
+        codelines[idx].id = idPrefix + idx;
         codelines[idx].idx = idx;
       };
 
       // Remove extra distractors if there are more alternative distrators
       // than should be shown at a time
       //  let permutation = this.getRandomPermutation(distractors.length);
-      let selected_distractors = _.sample(distractors, max_distractors);
-      for (let item of selected_distractors) {
+      let selectedDistractors = _.sample(distractors, maxDistractors);
+      for (let item of selectedDistractors) {
         widgetData.push(item);
       }
 
@@ -1081,7 +1028,7 @@
 
         // an array of line objects specifying the requested number
         // of distractors (not all possible alternatives)
-        distractors: deepExtend([], selected_distractors),
+        distractors: deepExtend([], selectedDistractors),
 
         // an array of line objects specifying the initial code arrangement
         // given to the user to use in constructing the solution
@@ -1094,13 +1041,13 @@
     }
 
     init(text) {
-      let initial_structures = this.parseCode(text.split('\n'), this.options.max_wrong_lines);
-      this.modelSolution = initial_structures.solution;
-      this.extraLines = initial_structures.distractors;
-      this.modifiedLines = initial_structures.widgetInitial;
+      let initialStruc = this.parseCode(text.split('\n'), this.options.maxWrongLines);
+      this.modelSolution = initialStruc.solution;
+      this.extraLines = initialStruc.distractors;
+      this.modifiedLines = initialStruc.widgetInitial;
 
       // Error handling
-      return initial_structures.errors
+      return initialStruc.errors
     };
 
     // Get a line object by the full id including id prefix
@@ -1128,8 +1075,8 @@
     // For example, the first line may not be indented.
     normalizeIndents(lines) {
       let normalized = [];
-      let new_line;
-      let match_indent = function(index) {
+      let newLine;
+      let matchIndent = function(index) {
         //return line index from the previous lines with matching indentation
         for (let i = index-1; i >= 0; i--) {
           if (lines[i].indent == lines[index].indent) {
@@ -1139,21 +1086,21 @@
         return -1;
       };
       for ( let i = 0; i < lines.length; i++ ) {
-        new_line = lines[i].clone();
+        newLine = lines[i].clone();
         if (i === 0) {
-          new_line.indent = 0;
+          newLine.indent = 0;
           if (lines[i].indent !== 0) {
-            new_line.indent = -1;
+            newLine.indent = -1;
           }
         } else if (lines[i].indent == lines[i-1].indent) {
-          new_line.indent = normalized[i-1].indent;
+          newLine.indent = normalized[i-1].indent;
         } else if (lines[i].indent > lines[i-1].indent) {
-          new_line.indent = normalized[i-1].indent + 1;
+          newLine.indent = normalized[i-1].indent + 1;
         } else {
           // indentation can be -1 if no matching indentation exists, i.e. IndentationError in Python
-          new_line.indent = match_indent(i);
+          newLine.indent = matchIndent(i);
         }
-        normalized[i] = new_line;
+        normalized[i] = newLine;
       }
       return normalized;
     };
@@ -1162,7 +1109,7 @@
       let codeLines = [];
       // update indent
       for (let clData of data){
-        let id = this.id_prefix + clData.idx;
+        let id = this.idPrefix + clData.idx;
         let cl = this.getLineById(id);
         if (!cl) continue;
         cl = cl.clone();
@@ -1171,7 +1118,6 @@
         codeLines.push(cl);
       }
 
-      this.feedback_exists = true;
       return this.grader.grade(codeLines);
      };
 
@@ -1210,17 +1156,17 @@
     codeLineAddToggles = function(codeLine) {
       let toggleRegexp = this.parson.toggleRegexp;
       let toggleSeparator = this.parson.options.toggleSeparator;
-      let toggles = codeLine.raw_code.match(toggleRegexp);
-      let html = codeLine.raw_code;
+      let toggles = codeLine.rawCode.match(toggleRegexp);
+      let html = codeLine.rawCode;
 
       if (toggles) {
         for (let toggle of toggles) {
           let opts = toggle.substring(10, toggle.length - 2).split(toggleSeparator);
           html = html.replace(
             toggle,
-            "<span class='jsparson-toggle' data-jsp-options='"
-            + JSON.stringify(opts).replace("<", "&lt;")
-            + "'></span>"
+            '<span class="pjs-toggle" data-jsp-options="'
+            + JSON.stringify(opts).replace('<', '&lt;')
+            + '"></span>'
           );
         }
       }
@@ -1229,7 +1175,7 @@
 
     codeLineToHTML(codeline) {
       let code = this.codeLineAddToggles(codeline);
-      return '<li id="' + codeline.id + '" class="prettyprint lang-py" data-id="' + codeline.idx + '">' + code + '<\/li>';
+      return '<li id="' + codeline.id + '" data-id="' + codeline.idx + '">' + code + '<\/li>';
     };
 
     codeLinesToHTML(codelineIDs, destinationID) {
@@ -1244,18 +1190,18 @@
     getIndentNew($item, leftPosDiff) {
       let parson = this.parson;
       let indentCurr = $item.prop('data-indent');
-      let indentNew = parson.options.can_indent ? indentCurr + Math.floor(leftPosDiff / parson.options.x_indent) : 0;
+      let indentNew = parson.options.canIndent ? indentCurr + Math.floor(leftPosDiff / parson.options.xIndent) : 0;
       indentNew = Math.max(0, indentNew);
       return indentNew;
     };
 
     updateHTMLIndent($item, indNew) {
-      $item.css('margin-left', this.parson.options.x_indent * indNew + 'px');
+      $item.css('margin-left', this.parson.options.xIndent * indNew + 'px');
       $item.prop('data-indent', indNew);
     };
 
     setToggleVal($codeline, toggleIdxs) {
-      $codeline.find('.jsparson-toggle').each(function(idx) {
+      $codeline.find('.pjs-toggle').each(function(idx) {
         let $toggle = $(this),
             tIdx = toggleIdxs[idx],
             choices = $toggle.data('jsp-options');
@@ -1275,15 +1221,14 @@
       })
 
       // init toggles
-      let $toggles = $box.find('.jsparson-toggle');
+      let $toggles = $box.find('.pjs-toggle');
       $toggles.prop('data-idx', -1);
       $toggles.click(function () {
         let $toggle = $(this),
             curVal = $toggle.text(),
             choices = $toggle.data('jsp-options'),
             newIdx = (choices.indexOf(curVal) + 1) % choices.length,
-            newVal = choices[newIdx],
-            $parent = $toggle.parent('li');
+            newVal = choices[newIdx];
 
         // change the shown toggle element
         $toggle.text(newVal);
@@ -1319,7 +1264,6 @@
               return;
             }
             let $item = ui.item;
-            let itemId = $item.id;
             let posDiff = ui.position.left - ui.item.parent().position().left;
             let indNew = that.getIndentNew($item, posDiff);
             that.updateHTMLIndent($item, indNew);
@@ -1330,8 +1274,9 @@
             let indNew = that.getIndentNew($item, posDiff);
             that.updateHTMLIndent($item, indNew);
           },
-          grid : parson.options.can_indent ? [parson.options.x_indent, 1 ] : false
+          grid : parson.options.canIndent ? [parson.options.xIndent, 1 ] : false
       });
+      $sortable.addClass('pjs-sortable');
 
       if (options.trashId) {
         let $trash = $('#ul-' + options.trashId).sortable({
@@ -1349,6 +1294,7 @@
         });
         $trash.sortable('option', 'connectWith', $sortable);
         $sortable.sortable('option', 'connectWith', $trash);
+        $trash.addClass('pjs-sortable');
       }
     };
 
@@ -1363,21 +1309,21 @@
         let permutation = this.getRandomPermutation(parson.modifiedLines.length);
         idlist = [];
         for(let idx of permutation) {
-            idlist.push(parson.modifiedLines[idx].id);
+          idlist.push(parson.modifiedLines[idx].id);
         }
       }
 
       if (parson.options.trashId) {
-          this.createHTMLFromLists([], idlist);
+        this.createHTMLFromLists([], idlist);
       } else {
-          this.createHTMLFromLists(idlist, []);
+        this.createHTMLFromLists(idlist, []);
       }
     }
 
     initListItemFromOrder(order) {
-      let id_prefix = this.parson.id_prefix;
+      let idPrefix = this.parson.idPrefix;
       for (let item of order) {
-        item.id = id_prefix + item.idx;
+        item.id = idPrefix + item.idx;
       }
       let idlist = order.map(item => item.id);
       this.shuffleLines(idlist);
@@ -1404,7 +1350,7 @@
         let clId = codeLineIds[idx];
         let $cl = $('#' + clId);
         let toggleIdxs = [];
-        $cl.find('.jsparson-toggle').each(function () {
+        $cl.find('.pjs-toggle').each(function () {
           let $toggle = $(this),
               valIdx = $toggle.prop('data-idx');
           toggleIdxs.push(valIdx);
