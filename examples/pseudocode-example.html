@@ -3,8 +3,6 @@
     <head>
         <title>Simple js-parsons example assignment</title>
         <link href="../parsons.css" rel="stylesheet" />
-        <link href="../lib/prettify.css" rel="stylesheet" />
-        <script src="../lib/prettify.js"></script>
         <meta charset="UTF-8" />
     </head>
     <body>
@@ -12,8 +10,8 @@
         <p>Construct a function by drag&amp;dropping and reordering lines from the
             left to the right.
             The constructed function should set the value of variable min to be the smaller of variables a and b.</p>
-        <div id="sortableTrash" class="sortable-code"></div>
-        <div id="sortable" class="sortable-code">
+        <div id="sortableTrash" class="pjs-sortable"></div>
+        <div id="sortable" class="pjs-sortable">
         </div>
         <div style="clear:both;"></div>
         <p>
@@ -38,7 +36,7 @@
             parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 // 'trashId': 'sortableTrash',
-                'max_wrong_lines': 1,
+                'maxWrongLines': 1,
                 'vartests': [
                     {
                         initcode: "min = None\na = 0\nb = 2",

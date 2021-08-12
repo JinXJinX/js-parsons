@@ -3,8 +3,6 @@
     <head>
         <title>Example of js-parsons turtle graphics assignment</title>
         <link href="../parsons.css" rel="stylesheet" />
-        <link href="../lib/prettify.css" rel="stylesheet" />
-        <script src="../lib/prettify.js"></script>
         <meta charset="UTF-8" />
     </head>
     <body>
@@ -44,8 +42,8 @@
           <a href="#" id="feedbackLink">Get feedback</a>
         </p>
         <div style="clear:both;"></div>
-        <div id="sortableTrash" class="sortable-code"></div>
-        <div id="sortable" class="sortable-code"></div>
+        <div id="sortableTrash" class="pjs-sortable"></div>
+        <div id="sortable" class="pjs-sortable"></div>
         <div id="unittest"></div>
         <script src="../lib/jquery.min.js"></script>
         <script src="../lib/jquery-ui.min.js"></script>
@@ -62,7 +60,7 @@
           let pjs = new ParsonsJS({
             'sortableId': 'sortable',
             // 'trashId': 'sortableTrash',
-            'max_wrong_lines': 1,
+            'maxWrongLines': 1,
             turtleModelCode: "modelTurtle.forward(100)\n" +
                   "modelTurtle.left(120)\nmodelTurtle.forward(100)\nmodelTurtle.left(120)\nmodelTurtle.forward(100)\n" +
                     "modelTurtle.left(120)",

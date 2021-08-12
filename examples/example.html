@@ -3,8 +3,6 @@
     <head>
         <title>Simple js-parsons example assignment</title>
         <link href="../parsons.css" rel="stylesheet" />
-        <link href="../lib/prettify.css" rel="stylesheet" />
-        <script src="../lib/prettify.js"></script>
     </head>
     <body>
         <h2>Simple js-parsons example assignment</h2>
@@ -15,8 +13,8 @@
         <p><strong>Note:</strong> The correct solution is obviously a dumb way to do
             it. This exercise is merely trying to give an example of a Parson's
             puzzle with js-parsons, not teach you Python :)</p>
-        <div id="sortableTrash" class="sortable-code"></div>
-        <div id="sortable" class="sortable-code">
+        <div id="sortableTrash" class="pjs-sortable"></div>
+        <div id="sortable" class="pjs-sortable">
         </div>
         <div style="clear:both;"></div>
         <p>
@@ -48,8 +46,7 @@
             var parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 'trashId': 'sortableTrash',
-                'max_wrong_lines': 1,
-                'feedback_cb' : displayErrors,
+                'maxWrongLines': 1,
                 codeStr: initial
             });
             parson.initUI();

@@ -3,14 +3,12 @@
     <head>
         <title>Simple js-parsons example assignment</title>
         <link href="../parsons.css" rel="stylesheet" />
-        <link href="../lib/prettify.css" rel="stylesheet" />
-        <script src="../lib/prettify.js"></script>
         <meta charset="UTF-8" />
     </head>
     <body>
         <h2>Simple js-parsons pseudocode example assignment</h2>
         <p>Construct code by reordering and indenting the lines.</p>
-        <div style="width:95%;" id="sortable" class="sortable-code">
+        <div style="width:95%;" id="sortable" class="pjs-sortable">
         </div>
         <div style="clear:both;"></div>
         <p>
@@ -26,7 +24,6 @@
         <script src="../parsons.js"></script>
         <script src="../lib/skulpt.js"></script>
         <script src="../lib/skulpt-stdlib.js"></script>
-        <script src="../lib/prettify.js"></script>
         <script>
         var initial = 'for (int i=0;i<3;i++) {\nSystem.out.print(\"I \");\nSystem.out.print(\"am \");\nSystem.out.print(\"a Java program \");\n}';
         var parson;
@@ -35,7 +32,7 @@
             // parson = new ParsonsWidget({
             parson = new ParsonsJS({
                 'sortableId': 'sortable',
-                'max_wrong_lines': 1,
+                'maxWrongLines': 1,
                 'vartests': [{initcode: "output = ''", code: "", message: "Testing...", variables: {output: "I am a Java program I am a Java program I am a Java program "}},
                     ],
                 'grader': ParsonsWidget.GRADERS.LanguageTranslationGrader,

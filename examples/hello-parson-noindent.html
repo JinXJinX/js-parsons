@@ -3,14 +3,12 @@
     <head>
         <title>Simple js-parsons example assignment</title>
         <link href="../parsons.css" rel="stylesheet" />
-        <link href="../lib/prettify.css" rel="stylesheet" />
-        <script src="../lib/prettify.js"></script>
     </head>
     <body>
         <h2>Simple js-parsons example assignment without indentation</h2>
         <p>Construct a program that prints Hello Parsons problems!</p>
-        <div id="sortableTrash" class="sortable-code"></div>
-        <div id="sortable" class="sortable-code">
+        <div id="sortableTrash" class="pjs-sortable"></div>
+        <div id="sortable" class="pjs-sortable">
         </div>
         <div style="clear:both;"></div>
         <p>
@@ -39,9 +37,8 @@
             var parson = new ParsonsJS({
                 sortableId: 'sortable',
                 trashId: 'sortableTrash',
-                max_wrong_lines: 1,
-                feedback_cb : displayErrors,
-                can_indent: false,
+                maxWrongLines: 1,
+                canIndent: false,
                 codeStr: initial
             });
             // parson.init(initial);
