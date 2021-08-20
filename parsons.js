@@ -268,7 +268,7 @@
   //  - vartests (required): array of variable test objects
   // Each variable test object can/must have the following properties:
   //  - initcode: code that will be prepended before the learner solution code
-  //  - code: code that will be appended after the learner solution code
+  //  - finalcode: code that will be appended after the learner solution code
   //  - message (required): a textual description of the test, shown to learner
   // Properties specifying what is tested:
   //  - variables: an object with properties for each variable name to
@@ -756,7 +756,7 @@
           if (!isClose && !isOpen && blocks.length > 0) {
             // indentation should match previous indent if inside block
             // and be greater than the indent of the block opening the block (minIndent)
-            if ((prevIndent && studentCodes[i].indent !== prevIndent) ||
+            if ((prevIndent && item.indent !== prevIndent) ||
                 item.indent <= minIndent) {
               noMatchingIds.push(item.id);
             }
@@ -1164,9 +1164,9 @@
           let opts = toggle.substring(10, toggle.length - 2).split(toggleSeparator);
           html = html.replace(
             toggle,
-            '<span class="pjs-toggle" data-jsp-options="'
+            "<span class='pjs-toggle' data-jsp-options='"
             + JSON.stringify(opts).replace('<', '&lt;')
-            + '"></span>'
+            + "'></span>"
           );
         }
       }
