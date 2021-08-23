@@ -72,10 +72,10 @@
     compop: ['<', '>', '<=', '>=', '==', '!='],
     mathop: ['+', '-', '*', '/'],
     boolop: ['and', 'or'],
-    range: function($item) {
-        let min = parseFloat($item.data('min') || '0'),
-            max = parseFloat($item.data('max') || '10'),
-            step = parseFloat($item.data('step') || '1'),
+    range: function(item) {
+        let min = parseFloat(item.getAttribute('data-min') || '0'),
+            max = parseFloat(item.getAttribute('data-max') || '10'),
+            step = parseFloat(item.getAttribute('data-step') || '1'),
             opts = [],
             curr = min;
         while (curr <= max) {
@@ -119,7 +119,6 @@
     }
   };
 
-  // $.extend(true, _, _) + ParsonsCodeline object clone
   let deepExtend = function(target, original) {
     if (Array.isArray(original)) {
       original.forEach(function (item, _) {
@@ -134,7 +133,7 @@
     } else if (original instanceof ParsonsCodeline) {
       target = original.clone();
     } else {
-      target = $.extend(true, target, original);
+      Object.assign(target, original);
     }
     return target;
   }
@@ -681,8 +680,8 @@
       let progLang = this.parson.options.programmingLang;
       let langBlocks = LanguageTranslationGrader._languageBlocks;
       if (progLang && langBlocks[progLang]) {
-        open = $.extend({}, open, langBlocks[progLang].open);
-        close = $.extend({}, close, langBlocks[progLang].close);
+        open = Object.assign({}, open, langBlocks[progLang].open);
+        close = Object.assign({}, close, langBlocks[progLang].close);
       }
 
       if (open && close) { // check blocks only if block definitions are given
@@ -775,22 +774,22 @@
           noMatchingCloseIds.push(item.id);
         }
 
-        if (noMatchingIds) {
+        if (noMatchingIds.length !== 0) {
           errors.push(formatLogMsg(LOG_MSG.NO_MATCHING, {
             segmentIds: noMatchingIds
           }))
         }
-        if (noMatchingOpenIds) {
+        if (noMatchingOpenIds.length !== 0) {
           errors.push(formatLogMsg(LOG_MSG.NO_MATCHING_OPEN, {
             segmentIds: noMatchingOpenIds
           }))
         }
-        if (noMatchingCloseIds) {
+        if (noMatchingCloseIds.length !== 0) {
           errors.push(formatLogMsg(LOG_MSG.NO_MATCHING_CLOSE, {
             segmentIds: noMatchingCloseIds
           }))
         }
-        if (blockCloseMismatchIds) {
+        if (blockCloseMismatchIds.length !== 0) {
           errors.push(formatLogMsg(LOG_MSG.blockClose_MISMATCH, {
             segmentIds: blockCloseMismatchIds
           }))
@@ -798,7 +797,7 @@
       }
 
       // if there were errors in the blocks, give feedback and don't execute the code
-      if (errors) {
+      if (errors.length !== 0) {
         return {success: false, errors: errors}
       }
 
@@ -921,12 +920,12 @@
         'toggleSeparator': '::'
       };
 
-      this.options = $.extend({}, defaults, options);
+      this.options = Object.assign({}, defaults, options);
       this.idPrefix = options['sortableId'] + 'codeline';
       this.toggleRegexp = new RegExp('\\$\\$toggle(' + this.options.toggleSeparator + '.*?)?\\$\\$', 'g');
 
-      if (this.options.hasOwnProperty('executableCode')) {
-        let initialStruc = this.parseCode(this.options.executableCode.split('\n'), 0);
+      if (this.options.hasOwnProperty('executableLines')) {
+        let initialStruc = this.parseCode(this.options.executableLines.split('\n'), 0);
         this.executableLines = initialStruc.solution;
       }
 
@@ -1187,52 +1186,55 @@
       return '<ul id="ul-' + destinationID + '">' + lineHTML.join('') + '</ul>';
     };
 
-    getIndentNew($item, leftPosDiff) {
+    getIndentNew(item, leftPosDiff) {
       let parson = this.parson;
-      let indentCurr = $item.prop('data-indent');
+      let indentCurr = parseInt(item.getAttribute('data-indent'));
       let indentNew = parson.options.canIndent ? indentCurr + Math.floor(leftPosDiff / parson.options.xIndent) : 0;
       indentNew = Math.max(0, indentNew);
       return indentNew;
     };
 
-    updateHTMLIndent($item, indNew) {
-      $item.css('margin-left', this.parson.options.xIndent * indNew + 'px');
-      $item.prop('data-indent', indNew);
+    updateHTMLIndent(item, indNew) {
+      item.style.marginLeft = this.parson.options.xIndent * indNew + 'px';
+      item.setAttribute('data-indent', indNew);
     };
 
-    setToggleVal($codeline, toggleIdxs) {
-      $codeline.find('.pjs-toggle').each(function(idx) {
-        let $toggle = $(this),
-            tIdx = toggleIdxs[idx],
-            choices = $toggle.data('jsp-options');
+    setToggleVal(codeline, toggleIdxs) {
+      codeline.querySelectorAll('.pjs-toggle').forEach(function(toggle, idx) {
+        let tIdx = toggleIdxs[idx],
+            choices = JSON.parse(toggle.getAttribute('data-jsp-options'));
 
         if (tIdx < 0 || !choices || tIdx > choices.length) {
           return
         }
         let newVal = choices[tIdx];
-        $toggle.text(newVal);
-        $toggle.prop('data-idx', tIdx);
+        toggle.textContent = newVal;
+        toggle.setAttribute('data-idx', tIdx);
       })
     }
 
-    initSortableBox = function($box) {
-      $box.find('li').each(function(_) {
-        $(this).prop('data-indent', 0);
+    initSortableBox = function(box) {
+      box.querySelectorAll('li').forEach(function(ele) {
+        ele.setAttribute('data-indent', 0);
       })
 
       // init toggles
-      let $toggles = $box.find('.pjs-toggle');
-      $toggles.prop('data-idx', -1);
-      $toggles.click(function () {
-        let $toggle = $(this),
-            curVal = $toggle.text(),
-            choices = $toggle.data('jsp-options'),
+      let toggles = box.querySelectorAll('.pjs-toggle');
+      let onClick = function () {
+        let toggle = this,
+            curVal = toggle.textContent,
+            choices = JSON.parse(toggle.getAttribute('data-jsp-options')),
             newIdx = (choices.indexOf(curVal) + 1) % choices.length,
             newVal = choices[newIdx];
 
         // change the shown toggle element
-        $toggle.text(newVal);
-        $toggle.prop('data-idx', newIdx);
+        toggle.textContent = newVal;
+        toggle.setAttribute('data-idx', newIdx);
+      }
+
+      toggles.forEach(function (ele) {
+        ele.setAttribute('data-idx', -1);
+        ele.addEventListener('click', onClick);
       })
     }
 
@@ -1240,39 +1242,40 @@
       let parson = this.parson;
       let options = parson.options;
       let html;
-      let $targetBox = $('#' + options.sortableId);
+      let targetBox = document.getElementById(options.sortableId);
 
       if (options.trashId) {
         html = this.codeLinesToHTML(trashIDs, options.trashId);
-        let $trashBox = $('#' + options.trashId);
-        $trashBox.html(html);
-        this.initSortableBox($trashBox);
+        let trashBox = document.getElementById(options.trashId);
+        trashBox.innerHTML = html;
+        this.initSortableBox(trashBox);
 
         html = this.codeLinesToHTML(solutionIDs, options.sortableId);
-        $targetBox.html(html);
+        targetBox.innerHTML = html;
       } else {
         html = this.codeLinesToHTML(solutionIDs, options.sortableId);
-        $targetBox.html(html);
+        targetBox.innerHTML = html;
       }
-      this.initSortableBox($targetBox);
+      this.initSortableBox(targetBox);
 
       let that = this;
+      // TODO replace sortable
       let $sortable = $('#ul-' + options.sortableId).sortable({
           start : function() {},
           stop : function(event, ui) {
             if ($(event.target)[0] != ui.item.parent()[0]) {
               return;
             }
-            let $item = ui.item;
+            let item = ui.item[0];
             let posDiff = ui.position.left - ui.item.parent().position().left;
-            let indNew = that.getIndentNew($item, posDiff);
-            that.updateHTMLIndent($item, indNew);
+            let indNew = that.getIndentNew(item, posDiff);
+            that.updateHTMLIndent(item, indNew);
           },
           receive : function(event, ui) {
-            let $item = ui.item;
+            let item = ui.item[0];
             let posDiff = ui.position.left - ui.item.parent().position().left;
-            let indNew = that.getIndentNew($item, posDiff);
-            that.updateHTMLIndent($item, indNew);
+            let indNew = that.getIndentNew(item, posDiff);
+            that.updateHTMLIndent(item, indNew);
           },
           grid : parson.options.canIndent ? [parson.options.xIndent, 1 ] : false
       });
@@ -1329,13 +1332,13 @@
       this.shuffleLines(idlist);
 
       for (let clData of order) {
-        let $item = $('#' + clData.id);
+        let item = document.getElementById(clData.id);
         if (clData.indent) {
-          this.updateHTMLIndent($item, clData.indent);
+          this.updateHTMLIndent(item, clData.indent);
         }
 
         if (clData.toggleIdxs) {
-          this.setToggleVal($item, clData.toggleIdxs);
+          this.setToggleVal(item, clData.toggleIdxs);
         }
       }
     }
@@ -1348,17 +1351,16 @@
       let data = [];
       for (let idx = 0; idx < codeLineIds.length; idx++) {
         let clId = codeLineIds[idx];
-        let $cl = $('#' + clId);
+        let cl = document.getElementById(clId);
         let toggleIdxs = [];
-        $cl.find('.pjs-toggle').each(function () {
-          let $toggle = $(this),
-              valIdx = $toggle.prop('data-idx');
+        cl.querySelectorAll('.pjs-toggle').forEach(function (toggler) {
+          let valIdx = toggler.getAttribute('data-idx');
           toggleIdxs.push(valIdx);
         })
 
         data.push({
-          idx: $cl.data('id'),
-          indent: $cl.prop('data-indent'),
+          idx: cl.getAttribute('data-id'),
+          indent: parseInt(cl.getAttribute('data-indent')),
           toggleIdxs: toggleIdxs
         })
       }

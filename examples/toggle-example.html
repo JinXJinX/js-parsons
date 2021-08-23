@@ -69,9 +69,9 @@
             $("#feedbackLink").click(function(event){
                 event.preventDefault();
                 var fb = parson.getFeedback();
-                $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
+                // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
                 console.log(fb);
-                if (fb.success) { alert("Good, you solved the assignment!"); }
+                // if (fb.success) { alert("Good, you solved the assignment!"); }
             });
          });
     </script>
