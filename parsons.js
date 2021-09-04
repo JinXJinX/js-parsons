@@ -1,5 +1,7 @@
 'use strict';
-(function($, _) { // wrap in anonymous function to not show some helper variables
+(function(_, Sortable) { // wrap in anonymous function to not show some helper variables
+  Sortable.mount(new PGridPlugin());
+
   const LOG_MSG = {
     ORDER: {
       id: 1,
@@ -1131,6 +1133,9 @@
       this.codeStr = config.codeStr;
       this.order = config.order;
       this.logs = [];
+
+      this.sortable1 = null;
+      this.sortable2 = null;
     }
 
     init() {
@@ -1149,6 +1154,8 @@
       // Log the original codelines in the exercise in order to be able to
       // match the input/output hashes to the code later on. We need only a
       // few properties of the codeline objects
+
+      // TODO
       this._addLog('init', this._getData());
     }
 
@@ -1189,13 +1196,15 @@
     getIndentNew(item, leftPosDiff) {
       let parson = this.parson;
       let indentCurr = parseInt(item.getAttribute('data-indent'));
-      let indentNew = parson.options.canIndent ? indentCurr + Math.floor(leftPosDiff / parson.options.xIndent) : 0;
+      // let indentNew = parson.options.canIndent ? indentCurr + Math.floor(leftPosDiff / parson.options.xIndent) : 0;
+      let indentNew = parson.options.canIndent ? Math.floor(leftPosDiff / parson.options.xIndent) : 0;
       indentNew = Math.max(0, indentNew);
+      // console.log('indentCurr ', indentCurr, '. indentNew ', indentNew, Math.floor(leftPosDiff / parson.options.xIndent), leftPosDiff, parson.options.xIndent)
       return indentNew;
     };
 
     updateHTMLIndent(item, indNew) {
-      item.style.marginLeft = this.parson.options.xIndent * indNew + 'px';
+      // item.style.marginLeft = this.parson.options.xIndent * indNew + 'px';
       item.setAttribute('data-indent', indNew);
     };
 
@@ -1260,44 +1269,99 @@
 
       let that = this;
       // TODO replace sortable
-      let $sortable = $('#ul-' + options.sortableId).sortable({
-          start : function() {},
-          stop : function(event, ui) {
-            if ($(event.target)[0] != ui.item.parent()[0]) {
-              return;
-            }
-            let item = ui.item[0];
-            let posDiff = ui.position.left - ui.item.parent().position().left;
-            let indNew = that.getIndentNew(item, posDiff);
-            that.updateHTMLIndent(item, indNew);
-          },
-          receive : function(event, ui) {
-            let item = ui.item[0];
-            let posDiff = ui.position.left - ui.item.parent().position().left;
-            let indNew = that.getIndentNew(item, posDiff);
-            that.updateHTMLIndent(item, indNew);
-          },
-          grid : parson.options.canIndent ? [parson.options.xIndent, 1 ] : false
+      // let $sortable = $('#ul-' + options.sortableId).sortable({
+      //     start : function() {},
+      //     stop : function(event, ui) {
+      //       if ($(event.target)[0] != ui.item.parent()[0]) {
+      //         return;
+      //       }
+      //       let item = ui.item[0];
+      //       let posDiff = ui.position.left - ui.item.parent().position().left;
+      //       let indNew = that.getIndentNew(item, posDiff);
+      //       that.updateHTMLIndent(item, indNew);
+      //     },
+      //     receive : function(event, ui) {
+      //       let item = ui.item[0];
+      //       let posDiff = ui.position.left - ui.item.parent().position().left;
+      //       let indNew = that.getIndentNew(item, posDiff);
+      //       that.updateHTMLIndent(item, indNew);
+      //     },
+      //     grid : parson.options.canIndent ? [parson.options.xIndent, 1 ] : false
+      // });
+
+      let sortableEle = document.getElementById('ul-' + options.sortableId);
+
+      this.sortable1 = new Sortable(sortableEle, {
+        group: 'pjs-sortable',
+        pjsGrid: true,
+        xIndent: options.canIndent ? options.xIndent : 0,
+        // animation: 150,
+        onStart : function() {},
+        onEnd : function(e) {
+          // if ($(event.target)[0] != ui.item.parent()[0]) {
+          //   return;
+          // }
+          // let item = e.item;
+          // let item = ui.item[0];
+          // let rect = item.getBoundingClientRect();
+          // let posDiff = ui.position.left - ui.item.parent().position().left;
+          // let posDiff = rect.left;
+          // let indNew = that.getIndentNew(item, posDiff);
+          // that.updateHTMLIndent(item, indNew);
+          // console.log('new indNew ', indNew)
+        },
+        onSort : function(e) {
+          // let item = e.item;
+          // let rect = item.getBoundingClientRect();
+          // let posDiff = ui.position.left - ui.item.parent().position().left;
+          // let posDiff = rect.left;
+          // let indNew = that.getIndentNew(item, posDiff);
+          // that.updateHTMLIndent(item, indNew);
+        },
       });
-      $sortable.addClass('pjs-sortable');
+    sortableEle.classList.add("pjs-sortable");
 
       if (options.trashId) {
-        let $trash = $('#ul-' + options.trashId).sortable({
-          start: function() {
+        // let $trash = $('#ul-' + options.trashId).sortable({
+        //   start: function() {
+        //   },
+        //   receive: function(event, ui) {
+        //     that.updateHTMLIndent(ui.item, 0);
+        //   },
+        //   stop: function(event, ui) {
+        //     if ($(event.target)[0] != ui.item.parent()[0]) {
+        //       // line moved to output and logged there
+        //       return;
+        //     }
+        //   }
+        // });
+        // $trash.sortable('option', 'connectWith', $sortable);
+        // $sortable.sortable('option', 'connectWith', $trash);
+        // $trash.addClass('pjs-sortable');
+
+        let trashEle = document.getElementById('ul-' + options.trashId);
+        this.sortable2 = new Sortable(trashEle, {
+          group: 'pjs-sortable',
+          pjsGrid: true,
+          xIndent: 0,
+          onStart : function() {},
+          onEnd : function(e) {
+            // if ($(event.target)[0] != ui.item.parent()[0]) {
+            //   return;
+            // }
+            // let item = e.item;
+            // // let item = ui.item[0];
+            // let rect = item.getBoundingClientRect();
+            // // let posDiff = ui.position.left - ui.item.parent().position().left;
+            // let posDiff = rect.left;
+            // let indNew = that.getIndentNew(item, posDiff);
+            // that.updateHTMLIndent(item, indNew);
           },
-          receive: function(event, ui) {
-            that.updateHTMLIndent(ui.item, 0);
+          onSort : function(e) {
+            // that.updateHTMLIndent(e.item, 0);
           },
-          stop: function(event, ui) {
-            if ($(event.target)[0] != ui.item.parent()[0]) {
-              // line moved to output and logged there
-              return;
-            }
-          }
         });
-        $trash.sortable('option', 'connectWith', $sortable);
-        $sortable.sortable('option', 'connectWith', $trash);
-        $trash.addClass('pjs-sortable');
+        trashEle.classList.add("pjs-sortable");
       }
     };
 
@@ -1345,13 +1409,13 @@
 
     _getData = function () {
       // get codeLineIds from DOM
-      let codeLineIds = $('#ul-' + this.parson.options.sortableId).sortable('toArray');
+      let codeLineIds = this.sortable1.toArray();
 
       // get order + indent
       let data = [];
       for (let idx = 0; idx < codeLineIds.length; idx++) {
         let clId = codeLineIds[idx];
-        let cl = document.getElementById(clId);
+        let cl = document.getElementById(this.parson.idPrefix + clId);
         let toggleIdxs = [];
         cl.querySelectorAll('.pjs-toggle').forEach(function (toggler) {
           let valIdx = toggler.getAttribute('data-idx');
@@ -1389,4 +1453,4 @@
 
 // allows _ and $ to be modified with noconflict without changing the globals
 // that parsons uses
-})($,_);
+})(_, Sortable);

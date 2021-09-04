@@ -45,17 +45,15 @@
         <div id="sortableTrash" class="pjs-sortable"></div>
         <div id="sortable" class="pjs-sortable"></div>
         <div id="unittest"></div>
-        <script src="../lib/jquery.min.js"></script>
-        <script src="../lib/jquery-ui.min.js"></script>
-        <script src="../lib/jquery.ui.touch-punch.min.js"></script>
         <script src="../lib/underscore-min.js"></script>
         <script src="../lib/lis.js"></script>
+        <script src="../lib/pjs-grid-plugin.js"></script>
+        <script src="../lib/sortable.min.js"></script>
         <script src="../parsons.js"></script>
         <script src="../lib/skulpt.js"></script>
         <script src="../lib/skulpt-stdlib.js"></script>
         <script>
-        $(document).ready(function() {
-          var initial = 'REPEAT 3 TIMES\nforward(100)\nleft(120)\nENDREPEAT';
+          let initial = 'REPEAT 3 TIMES\nforward(100)\nleft(120)\nENDREPEAT';
           Sk.canvas = "studentCanvas";
           let pjs = new ParsonsJS({
             'sortableId': 'sortable',
@@ -74,24 +72,16 @@
           });
 
           pjs.initUI();
-            // parson.init(initial);
-            // parson.shuffleLines();
-          $("#newInstanceLink").click(function(event){
+          document.getElementById('newInstanceLink').addEventListener("click", function (event) {
             event.preventDefault();
-            pjs.shuffleLines();
+            parson.shuffleLines();
           });
-          $("#feedbackLink").click(function(event){
+
+          document.getElementById('feedbackLink').addEventListener("click", function (event) {
             event.preventDefault();
-            var fb = pjs.getFeedback();
-            console.log(fb);
-            // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
-            // if (fb.success) {
-            //   alert("Great job, you solved the exercise!");
-            // } else {
-            //   alert("Sorry, your solution does not match the model image");
-            // }
+            let fb = parson.getFeedback();
+            console.log(fb)
           });
-        });
         </script>
     </body>
 </html>

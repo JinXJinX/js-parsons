@@ -16,21 +16,16 @@
             <a href="#" id="feedbackLink">Get feedback</a>
         </p>
         <div id="unittest"></div>
-        <script src="../lib/jquery.min.js"></script>
-        <script src="../lib/jquery-ui.min.js"></script>
-        <script src="../lib/jquery.ui.touch-punch.min.js"></script>
         <script src="../lib/underscore-min.js"></script>
         <script src="../lib/lis.js"></script>
+        <script src="../lib/pjs-grid-plugin.js"></script>
+        <script src="../lib/sortable.min.js"></script>
         <script src="../parsons.js"></script>
         <script src="../lib/skulpt.js"></script>
         <script src="../lib/skulpt-stdlib.js"></script>
         <script>
-        var initial = 'for (int i=0;i<3;i++) {\nSystem.out.print(\"I \");\nSystem.out.print(\"am \");\nSystem.out.print(\"a Java program \");\n}';
-        var parson;
-
-        $(document).ready(function(){
-            // parson = new ParsonsWidget({
-            parson = new ParsonsJS({
+            let initial = 'for (int i=0;i<3;i++) {\nSystem.out.print(\"I \");\nSystem.out.print(\"am \");\nSystem.out.print(\"a Java program \");\n}';
+            let parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 'maxWrongLines': 1,
                 'vartests': [{initcode: "output = ''", finalcode: "", message: "Testing...", variables: {output: "I am a Java program I am a Java program I am a Java program "}},
@@ -51,21 +46,18 @@
                 ],
                 codeStr: initial
             });
-            // parson.init(initial);
-            // parson.shuffleLines();
             parson.initUI();
 
-            $("#newInstanceLink").click(function(event){
+            document.getElementById('newInstanceLink').addEventListener("click", function (event) {
                 event.preventDefault();
                 parson.shuffleLines();
             });
-            $("#feedbackLink").click(function(event){
+
+            document.getElementById('feedbackLink').addEventListener("click", function (event) {
                 event.preventDefault();
-                var fb = parson.getFeedback();
-                // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
-                console.log(fb);
+                let fb = parson.getFeedback();
+                console.log(fb)
             });
-        });
         </script>
     </body>
 </html>

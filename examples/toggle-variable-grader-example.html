@@ -1,60 +1,56 @@
 <!doctype html>
 <html>
-<head>
-  <title>Variable Swap</title>
-  <link rel="stylesheet" href="../parsons.css" />
-  <meta charset="utf8"/>
-</head>
-<body>
-<h2>Variable Swap</h2>
-<p>Construct a program that swaps the values of variables <code>x</code> and <code>y</code> using the
-  helper variable <code>tmp</code>. You can change the names of the variables (<span class="pjs-toggle"></span>)
-  by clicking them.</p>
-<div id="sortableTrash" class="pjs-sortable"><p>Trash</p></div>
-<div id="sortable" class="pjs-sortable"><p>Solution</p></div>
-<div style="clear:both;"></div>
-<p>
-  <a href="#" id="newInstanceLink">New instance</a>
-  <a href="#" id="feedbackLink">Get feedback</a>
-</p>
-<div id="unittest"></div>
-<script src="../lib/jquery.min.js"></script>
-<script src="../lib/jquery-ui.min.js"></script>
-<script src="../lib/jquery.ui.touch-punch.min.js"></script>
-<script src="../lib/underscore-min.js"></script>
-<script src="../lib/lis.js"></script>
-<script src="../parsons.js"></script>
-<script src="../lib/skulpt.js"></script>
-<script src="../lib/skulpt-stdlib.js"></script>
-<script>
-  var initial = "$$toggle::x::y::tmp$$ = $$toggle::x::y::tmp$$\n" +
-                "$$toggle::x::y::tmp$$ = $$toggle::x::y::tmp$$\n" +
-                "$$toggle::x::y::tmp$$ = $$toggle::x::y::tmp$$\n";
-  $(document).ready(function(){
-    // var parson = new ParsonsWidget({
-    var parson = new ParsonsJS({
-      'sortableId': 'sortable',
-      'trashId': 'sortableTrash',
-      'vartests': [{initcode: "x = 0\ny=2", finalcode: "", message: "Testing with initial variable values x = 0 and y = 2", variables: {x: 2}},
-                   {initcode: "x = 3\ny=4\n", finalcode: "", message: "Testing with initial variable values x = 3 and y = 4", variables: {x: 4, y: 3}}],
-      lang: "en",
-      codeStr: initial
-    });
-    // parson.init(initial);
-    // parson.shuffleLines();
-    parson.initUI();
-    $("#newInstanceLink").click(function(event){
-      event.preventDefault();
-      parson.shuffleLines();
-    });
-    $("#feedbackLink").click(function(event){
-      event.preventDefault();
-      var fb = parson.getFeedback();
-      console.log(fb);
-      // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
-      // if (fb.success) { alert("Good, you solved the assignment!"); }
-    });
-  });
-</script>
-</body>
+  <head>
+    <title>Variable Swap</title>
+    <link rel="stylesheet" href="../parsons.css" />
+    <meta charset="utf8"/>
+  </head>
+  <body>
+    <h2>Variable Swap</h2>
+    <p>Construct a program that swaps the values of variables <code>x</code> and <code>y</code> using the
+      helper variable <code>tmp</code>. You can change the names of the variables (<span class="pjs-toggle"></span>)
+      by clicking them.</p>
+    <div id="sortableTrash" class="pjs-sortable"><p>Trash</p></div>
+    <div id="sortable" class="pjs-sortable"><p>Solution</p></div>
+    <div style="clear:both;"></div>
+    <p>
+      <a href="#" id="newInstanceLink">New instance</a>
+      <a href="#" id="feedbackLink">Get feedback</a>
+    </p>
+    <div id="unittest"></div>
+    <script src="../lib/underscore-min.js"></script>
+    <script src="../lib/lis.js"></script>
+    <script src="../lib/pjs-grid-plugin.js"></script>
+    <script src="../lib/sortable.min.js"></script>
+    <script src="../parsons.js"></script>
+    <script src="../lib/skulpt.js"></script>
+    <script src="../lib/skulpt-stdlib.js"></script>
+    <script>
+      let initial = "$$toggle::x::y::tmp$$ = $$toggle::x::y::tmp$$\n" +
+                    "$$toggle::x::y::tmp$$ = $$toggle::x::y::tmp$$\n" +
+                    "$$toggle::x::y::tmp$$ = $$toggle::x::y::tmp$$\n";
+      let parson = new ParsonsJS({
+        'sortableId': 'sortable',
+        'trashId': 'sortableTrash',
+        'vartests': [
+          {initcode: "x = 0\ny=2", finalcode: "", message: "Testing with initial variable values x = 0 and y = 2", variables: {x: 2}},
+          {initcode: "x = 3\ny=4\n", finalcode: "", message: "Testing with initial variable values x = 3 and y = 4", variables: {x: 4, y: 3}}
+        ],
+        lang: "en",
+        codeStr: initial
+      });
+      parson.initUI();
+
+      document.getElementById('newInstanceLink').addEventListener("click", function (event) {
+        event.preventDefault();
+        parson.shuffleLines();
+      });
+
+      document.getElementById('feedbackLink').addEventListener("click", function (event) {
+        event.preventDefault();
+        let fb = parson.getFeedback();
+        console.log(fb)
+      });
+    </script>
+  </body>
 </html>

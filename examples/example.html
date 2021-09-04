@@ -14,54 +14,43 @@
             it. This exercise is merely trying to give an example of a Parson's
             puzzle with js-parsons, not teach you Python :)</p>
         <div id="sortableTrash" class="pjs-sortable"></div>
-        <div id="sortable" class="pjs-sortable">
-        </div>
+        <div id="sortable" class="pjs-sortable"></div>
         <div style="clear:both;"></div>
         <p>
             <a href="#" id="newInstanceLink">New instance</a>
             <a href="#" id="feedbackLink">Get feedback</a>
         </p>
-        <script src="../lib/jquery.min.js"></script>
-        <script src="../lib/jquery-ui.min.js"></script>
-        <script src="../lib/jquery.ui.touch-punch.min.js"></script>
+        <script src="../lib/pjs-grid-plugin.js"></script>
+        <script src="../lib/sortable.min.js"></script>
         <script src="../lib/underscore-min.js"></script>
         <script src="../lib/lis.js"></script>
         <script src="../parsons.js"></script>
         <script>
-        var initial = 'def is_true(boolean_value):\n' +
-                      '  if boolean_value:\n' +
-                      '    return True\n' +
-                      '  return 3true #distractor\n' +
-                      '  return False\n' +
-                      '  return true #distractor\n';
+            let codeStr = 'def is_true(boolean_value):\n' +
+                        '  if boolean_value:\n' +
+                        '    return True\n' +
+                        '  return 3true #distractor\n' +
+                        '  return False\n' +
+                        '  return true #distractor\n';
 
-        function displayErrors(fb) {
-            // if(fb.errors.length > 0) {
-            //     alert(fb.errors[0]);
-            // }
-        }
-
-        $(document).ready(function(){
-            // var parson = new ParsonsWidget({
-            var parson = new ParsonsJS({
+            let parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 'trashId': 'sortableTrash',
                 'maxWrongLines': 1,
-                codeStr: initial
+                codeStr: codeStr
             });
             parson.initUI();
-            // parson.init(initial);
-            // parson.shuffleLines();
-            $("#newInstanceLink").click(function(event){
+
+            document.getElementById('newInstanceLink').addEventListener("click", function (event) {
                 event.preventDefault();
                 parson.shuffleLines();
             });
-            $("#feedbackLink").click(function(event){
+
+            document.getElementById('feedbackLink').addEventListener("click", function (event) {
                 event.preventDefault();
                 let fb = parson.getFeedback();
                 console.log(fb)
             });
-        });
         </script>
     </body>
 </html>

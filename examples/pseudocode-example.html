@@ -19,21 +19,16 @@
             <a href="#" id="feedbackLink">Get feedback</a>
         </p>
         <div id="unittest"></div>
-        <script src="../lib/jquery.min.js"></script>
-        <script src="../lib/jquery-ui.min.js"></script>
-        <script src="../lib/jquery.ui.touch-punch.min.js"></script>
         <script src="../lib/underscore-min.js"></script>
         <script src="../lib/lis.js"></script>
+        <script src="../lib/pjs-grid-plugin.js"></script>
+        <script src="../lib/sortable.min.js"></script>
         <script src="../parsons.js"></script>
         <script src="../lib/skulpt.js"></script>
         <script src="../lib/skulpt-stdlib.js"></script>
         <script>
-        var initial = 'IF $$toggle::a::b$$ $$toggle::<::>::<>$$ b THEN\n  min := a\nELSE\n  min := b\nENDIF';
-        var parson;
-
-        $(document).ready(function(){
-            // parson = new ParsonsWidget({
-            parson = new ParsonsJS({
+            let initial = 'IF $$toggle::a::b$$ $$toggle::<::>::<>$$ b THEN\n  min := a\nELSE\n  min := b\nENDIF';
+            let parson = new ParsonsJS({
                 'sortableId': 'sortable',
                 // 'trashId': 'sortableTrash',
                 'maxWrongLines': 1,
@@ -66,20 +61,18 @@
                 ],
                 codeStr: initial
             });
-            // parson.init(initial);
-            // parson.shuffleLines();
             parson.initUI();
-            $("#newInstanceLink").click(function(event){
+
+            document.getElementById('newInstanceLink').addEventListener("click", function (event) {
                 event.preventDefault();
                 parson.shuffleLines();
             });
-            $("#feedbackLink").click(function(event){
+
+            document.getElementById('feedbackLink').addEventListener("click", function (event) {
                 event.preventDefault();
-                var fb = parson.getFeedback();
+                let fb = parson.getFeedback();
                 console.log(fb)
-                // $("#unittest").html("<h2>Feedback from testing your program:</h2>" + fb.feedback);
             });
-        });
         </script>
     </body>
 </html>
